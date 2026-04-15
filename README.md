@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SehatMok Web
 
-## Getting Started
+Next.js App Router + Prisma MySQL MVP with JWT cookie authentication.
 
-First, run the development server:
+## Environment
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Create `.env` from `.env.example`:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Required values:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+DATABASE_URL="mysql://root:password@localhost:3306/sehatmok"
+JWT_SECRET="replace-with-a-long-random-secret"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Install
 
-## Learn More
+```powershell
+npm install
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Migrate + Seed
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```powershell
+npx prisma migrate dev --name auth
+npx prisma db seed
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Run
 
-## Deploy on Vercel
+```powershell
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Main APIs
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET/PUT /api/profile`
+- `GET /api/dashboard/summary`
+- `GET/POST /api/fridge`
+- `PUT/DELETE /api/fridge/:id`
+- `GET/POST /api/logs`
+- `GET /api/recipes`
+- `GET /api/recipes/:id`
+- `POST /api/recommendations`
+
+## Recommendation API
+
+### Endpoint
+
+`POST /api/recommendations` (auth required)
+
+### Example payload
+
+```json
+{
+  "selectedFridgeItemIds": ["cm9abc123", "cm9def456"],
+  "dietaryPreferences": "high protein, low carb, no peanuts",
+  "limit": 6
+}
+```
+
+### Another payload example
+
+```json
+{
+  "selectedFridgeItemIds": [],
+  "dietaryPreferences": "",
+  "limit": 10
+}
+```
+
+### Example response shape
+
+```json
+{
+  "targetCalories": 2100,
+  "selectedFridgeItems": [
+    { "id": "cm9abc123", "name": "Spinach", "category": "Vegetables" }
+  ],
+  "dietaryPreferences": "high protein, low carb, no peanuts",
+  "recommendations": [
+    {
+      "id": "recipe-zesty-avocado-bowl",
+      "name": "Zesty Avocado Bowl",
+      "matchPercent": 66,
+      "ingredientScore": 1,
+      "calorieScore": 0.1619,
+      "finalScore": 0.6648,
+      "explanation": "Matches 3/3 required ingredients. 16% calorie closeness (340 vs 2100 kcal). Preference noted: high protein, low carb, no peanuts.",
+      "calories": 340
+    }
+  ]
+}
+```
+
+## Quick test flow (Phase 4)
+
+1. Login through `/login`.
+2. Ensure you have fridge items at `/fridge`.
+3. Open `/ai-recipe`, select ingredients, add optional preferences, then click **Generate Recipe**.
+4. Confirm recommendation cards appear with match percent, explanation, and links to `/recipes/[id]`.
+5. Call `POST /api/recommendations` manually from browser devtools or API client while logged in and verify sorted results by `finalScore`.

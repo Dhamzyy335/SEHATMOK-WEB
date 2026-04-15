@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+enum LogType {
+  INTAKE
+  OUTTAKE
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String
+  age            Int?
+  weight         Float?
+  height         Float?
+  activityLevel  ActivityLevel?
+  targetCalories Int?
+  createdAt      DateTime       @default(now())
+  fridgeItems    FridgeItem[]
+  logs           UserLog[]
+  bookmarks      Bookmark[]
+  mealPlans      MealPlan[]
+
+  @@index([createdAt])
+}
+
+model FridgeItem {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  category   String
+  quantity   Float
+  unit       String
+  expiryDate DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([category])
+  @@index([expiryDate])
+}
+
+model Recipe {
+  id                String             @id @default(cuid())
+  name              String
+  description       String?
+  steps             Json
+  imageUrl          String?
+  calories          Int?
+  protein           Float?
+  carbs             Float?
+  fat               Float?
+  fiber             Float?
+  recipeIngredients RecipeIngredient[]
+  bookmarks         Bookmark[]
+  mealPlans         MealPlan[]
+
+  @@index([name])
+}
+
+model Ingredient {
+  id              String             @id @default(cuid())
+  name            String             @unique
+  caloriesPer100  Float?
+  proteinPer100   Float?
+  carbsPer100     Float?
+  fatPer100       Float?
+  recipeRelations RecipeIngredient[]
+
+  @@index([name])
+}
+
+model RecipeIngredient {
+  id           String     @id @default(cuid())
+  recipeId     String
+  ingredientId String
+  quantity     Float
+  unit         String
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, ingredientId])
+  @@index([recipeId])
+  @@index([ingredientId])
+}
+
+model UserLog {
+  id        String   @id @default(cuid())
+  userId    String
+  type      LogType
+  calories  Int
+  protein   Float?
+  carbs     Float?
+  fat       Float?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  recipeId  String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recipeId])
+  @@index([userId])
+  @@index([recipeId])
+}
+
+model MealPlan {
+  id       String   @id @default(cuid())
+  userId   String
+  date     DateTime
+  recipeId String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, recipeId])
+  @@index([userId, date])
+  @@index([recipeId])
+}

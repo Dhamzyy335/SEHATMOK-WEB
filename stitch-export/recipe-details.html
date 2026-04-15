@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Recipe Detail - Editorial Nutrition</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "error-container": "#f95630",
+              "on-secondary-container": "#6a3c00",
+              "on-tertiary-container": "#00534d",
+              "secondary-dim": "#764400",
+              "tertiary-container": "#7fe6db",
+              "outline": "#747776",
+              "tertiary": "#006760",
+              "surface-container-lowest": "#ffffff",
+              "on-secondary-fixed": "#4f2c00",
+              "tertiary-dim": "#005a54",
+              "primary-dim": "#025d16",
+              "on-primary-container": "#005c15",
+              "on-surface-variant": "#595c5b",
+              "on-surface": "#2c2f2e",
+              "outline-variant": "#abaeac",
+              "on-tertiary-fixed": "#003e39",
+              "inverse-primary": "#9df197",
+              "surface-bright": "#f5f7f5",
+              "on-primary": "#d1ffc8",
+              "primary-fixed-dim": "#90e28a",
+              "primary": "#176a21",
+              "secondary-container": "#ffc791",
+              "tertiary-fixed-dim": "#71d7cd",
+              "secondary-fixed": "#ffc791",
+              "surface-container": "#e6e9e7",
+              "surface-container-high": "#e0e3e1",
+              "inverse-surface": "#0b0f0e",
+              "on-background": "#2c2f2e",
+              "surface": "#f5f7f5",
+              "on-error-container": "#520c00",
+              "secondary-fixed-dim": "#ffb467",
+              "on-tertiary-fixed-variant": "#005d57",
+              "background": "#f5f7f5",
+              "on-primary-fixed-variant": "#12661e",
+              "primary-container": "#9df197",
+              "error": "#b02500",
+              "tertiary-fixed": "#7fe6db",
+              "primary-fixed": "#9df197",
+              "surface-variant": "#d9dedb",
+              "on-primary-fixed": "#00460e",
+              "on-secondary": "#fff0e5",
+              "on-tertiary": "#bffff7",
+              "inverse-on-surface": "#9b9d9c",
+              "surface-container-highest": "#d9dedb",
+              "on-error": "#ffefec",
+              "secondary": "#874e00",
+              "surface-container-low": "#eff1ef",
+              "error-dim": "#b92902",
+              "surface-tint": "#176a21",
+              "on-secondary-fixed-variant": "#774400",
+              "surface-dim": "#d1d5d3"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-gradient {
+            background: linear-gradient(135deg, #176a21 0%, #9df197 100%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface leading-relaxed">
+<!-- Top Navigation Bar (Suppressed shared shell for task focus) -->
+<header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-6 py-6 transition-all duration-300">
+<button class="w-12 h-12 flex items-center justify-center bg-white/90 rounded-full shadow-lg text-on-surface active:scale-90 transition-transform">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex gap-3">
+<button class="w-12 h-12 flex items-center justify-center bg-white/90 rounded-full shadow-lg text-on-surface active:scale-90 transition-transform">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center bg-white/90 rounded-full shadow-lg text-on-surface active:scale-90 transition-transform">
+<span class="material-symbols-outlined">share</span>
+</button>
+</div>
+</header>
+<main class="pb-24">
+<!-- Hero Section -->
+<div class="relative w-full h-[530px] overflow-hidden">
+<img alt="Vibrant Summer Salad" class="w-full h-full object-cover" data-alt="Close-up of a vibrant Mediterranean salad with grilled halloumi, pomegranate seeds, and fresh mint on a dark ceramic plate with soft side lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDi6bGdgLcUj5dGGU1vs-w5dmR4U6PBnjONwmiFFCTj0sQ62GOvnglEj2dzynaR-PS825zCpaFJAJCekxXi9ZP2XyClB-xh5O3owF_8A2PbnxR1UDRUfen1VWggisPIDmAWGb6E-Rds71EA9GdVdQ7v2dyClDkYBQGrsUCwS3ipcm6vATbFBxyNNWOktxgcCxx9tq7doqtDGvP6Mak202wPQFLWUiTDTKnGvGTo6cTmqGd5OIA9p-HwNcosxqrErcXfiCaXQzjHr9cw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+</div>
+<!-- Recipe Content Container -->
+<div class="relative -mt-20 px-6 max-w-screen-md mx-auto">
+<div class="bg-surface-container-lowest rounded-xl p-8 shadow-sm">
+<!-- Recipe Meta -->
+<div class="flex flex-col gap-4 mb-8">
+<span class="inline-flex w-fit px-3 py-1 bg-secondary-container text-on-secondary-fixed-variant text-[10px] font-bold tracking-widest uppercase rounded-full">Editorial Choice</span>
+<h1 class="font-headline font-extrabold text-4xl tracking-tight text-on-surface">Summer Harvest Halloumi Bowl</h1>
+<p class="text-on-surface-variant font-medium leading-relaxed">A refreshing blend of charred halloumi, fresh mint, and protein-packed chickpeas, drizzled with a citrus AI-optimized dressing.</p>
+</div>
+<!-- Info Bar: Bento Style -->
+<div class="grid grid-cols-3 gap-4 mb-12">
+<div class="bg-surface-container-low p-4 rounded-xl flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary mb-2">schedule</span>
+<span class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Cook Time</span>
+<span class="font-headline font-bold text-lg">25 min</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-secondary mb-2">local_fire_department</span>
+<span class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Calories</span>
+<span class="font-headline font-bold text-lg">420 kcal</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-tertiary mb-2">groups</span>
+<span class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Servings</span>
+<span class="font-headline font-bold text-lg">2 pers</span>
+</div>
+</div>
+<!-- Nutrition Breakdown: Editorial Chart -->
+<section class="mb-12">
+<div class="flex justify-between items-end mb-6">
+<h2 class="font-headline font-bold text-2xl">Nutrition Profile</h2>
+<span class="text-xs text-primary font-bold tracking-tight">AI Verified Stats</span>
+</div>
+<div class="grid grid-cols-4 gap-2 h-32 items-end mb-4">
+<div class="flex flex-col items-center gap-2">
+<div class="w-full bg-primary rounded-t-lg" style="height: 80%;"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">Protein</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-full bg-secondary-dim rounded-t-lg" style="height: 45%;"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">Carbs</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-full bg-tertiary rounded-t-lg" style="height: 60%;"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">Fats</span>
+</div>
+<div class="flex flex-col items-center gap-2">
+<div class="w-full bg-outline-variant rounded-t-lg" style="height: 30%;"></div>
+<span class="text-[10px] font-bold text-on-surface-variant">Fiber</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex justify-between border-b border-outline-variant/10 py-2">
+<span class="text-sm font-medium text-on-surface-variant">Vitamin C</span>
+<span class="text-sm font-bold">85% DV</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant/10 py-2">
+<span class="text-sm font-medium text-on-surface-variant">Iron</span>
+<span class="text-sm font-bold">12% DV</span>
+</div>
+</div>
+</section>
+<!-- Ingredients -->
+<section class="mb-12">
+<h2 class="font-headline font-bold text-2xl mb-6">Ingredients</h2>
+<div class="space-y-4">
+<label class="flex items-center gap-4 group cursor-pointer">
+<div class="relative flex items-center justify-center">
+<input class="peer h-6 w-6 rounded-lg border-outline-variant text-primary focus:ring-0" type="checkbox"/>
+<span class="material-symbols-outlined absolute opacity-0 peer-checked:opacity-100 text-white pointer-events-none text-sm" style="font-variation-settings: 'wght' 700">check</span>
+</div>
+<div class="flex-1 flex justify-between">
+<span class="text-on-surface group-hover:text-primary transition-colors">Fresh Halloumi Cheese</span>
+<span class="text-on-surface-variant font-label text-sm tracking-wide">200g</span>
+</div>
+</label>
+<label class="flex items-center gap-4 group cursor-pointer">
+<input class="h-6 w-6 rounded-lg border-outline-variant text-primary focus:ring-0" type="checkbox"/>
+<div class="flex-1 flex justify-between">
+<span class="text-on-surface group-hover:text-primary transition-colors">Organic Chickpeas</span>
+<span class="text-on-surface-variant font-label text-sm tracking-wide">1 Can</span>
+</div>
+</label>
+<label class="flex items-center gap-4 group cursor-pointer">
+<input class="h-6 w-6 rounded-lg border-outline-variant text-primary focus:ring-0" type="checkbox"/>
+<div class="flex-1 flex justify-between">
+<span class="text-on-surface group-hover:text-primary transition-colors">Pomegranate Seeds</span>
+<span class="text-on-surface-variant font-label text-sm tracking-wide">1/2 Cup</span>
+</div>
+</label>
+<label class="flex items-center gap-4 group cursor-pointer">
+<input class="h-6 w-6 rounded-lg border-outline-variant text-primary focus:ring-0" type="checkbox"/>
+<div class="flex-1 flex justify-between">
+<span class="text-on-surface group-hover:text-primary transition-colors">Fresh Mint Leaves</span>
+<span class="text-on-surface-variant font-label text-sm tracking-wide">1 Bunch</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Preparation Steps -->
+<section>
+<h2 class="font-headline font-bold text-2xl mb-6">Instructions</h2>
+<div class="space-y-8">
+<div class="flex gap-6">
+<div class="flex-shrink-0 w-10 h-10 editorial-gradient text-white font-headline font-bold rounded-full flex items-center justify-center">1</div>
+<div class="flex-1">
+<h3 class="font-bold mb-2">Prep the Halloumi</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">Slice the halloumi into 1cm thick rectangles. Pat dry with a paper towel to ensure a perfect golden crust when frying.</p>
+</div>
+</div>
+<div class="flex gap-6">
+<div class="flex-shrink-0 w-10 h-10 bg-surface-container-highest text-on-surface font-headline font-bold rounded-full flex items-center justify-center">2</div>
+<div class="flex-1">
+<h3 class="font-bold mb-2">Toast the Chickpeas</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">In a large skillet over medium heat, toss chickpeas with a drizzle of olive oil and smoked paprika until slightly crispy, about 8 minutes.</p>
+</div>
+</div>
+<div class="flex gap-6">
+<div class="flex-shrink-0 w-10 h-10 bg-surface-container-highest text-on-surface font-headline font-bold rounded-full flex items-center justify-center">3</div>
+<div class="flex-1">
+<h3 class="font-bold mb-2">Assemble &amp; Dress</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">Combine the warm halloumi with fresh mint, pomegranate, and chickpeas. Whisk the lemon juice and olive oil for a light finishing touch.</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Sticky Interaction Bar -->
+<div class="fixed bottom-8 left-0 right-0 px-6 z-40 max-w-screen-md mx-auto">
+<div class="glass-card rounded-full p-2 flex items-center justify-between shadow-2xl border border-white/20">
+<div class="flex -space-x-2 ml-4">
+<img alt="user" class="w-8 h-8 rounded-full border-2 border-white" data-alt="portrait of a professional chef smiling in a bright kitchen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAglRuBBnsa1HLc-9O3rSIC5qibWR9MmqfHZx7K5I4SUQAbehW6_9i8oiInStmW8RuvRgR1DQaJx6CwUolKkeBuz29f8DIewmK4RGZwfmtIGjvY6iRUCqBJVqGQRhnzZ-3hu9fAAijKIf_5-Vcs0t2Hna0O490w6IWj-QXxJINkOorFVWz0V15FMpxDVCixVAnVwcmSimrMEMpRWTrtTUhHn-Td7ooDYYzKm6SoBhQH6toGYb0UTF8lRw4Qp9l99TkX4elG6NouFRHZ"/>
+<img alt="user" class="w-8 h-8 rounded-full border-2 border-white" data-alt="portrait of a young woman with a healthy glow in athletic wear" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDX_wMaLAkqRRzfXVvOwdLbEvWal9ysm-v-vFnAaZt1HvnOEWrnRHOzTTAAfwJnRJYd-L7BwYiR3MAUlqgvVwIar7z8nXg1DqVTSyjLkNGSD0J6Ll-2jEsO1Z3itRMGu7GAeLo20FTdRwmV5kJUNqqWEgvmFxE1DRQpMLu0NfUjjiDrn28U5PeTwC7T_2URSgl0I1wXFA0eXBCjdd5q-WMZbQMQ886t0Wpq5MgWdRYwGghjG-WkPHP8HqrI01ukshqNSXJtzB8o_5BD"/>
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container text-[10px] font-bold flex items-center justify-center border-2 border-white">+4k</div>
+</div>
+<button class="bg-primary text-on-primary font-headline font-bold px-8 py-3 rounded-full flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-xl">restaurant</span>
+                    Start Cooking
+                </button>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation (Shared Component) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-evenly items-center px-4 pb-8 pt-3 bg-white/80 dark:bg-[#1A1C1A]/80 backdrop-blur-xl shadow-[0_-8px_24px_rgba(44,47,46,0.06)] md:hidden">
+<div class="flex flex-col items-center justify-center text-[#2C2F2E]/50 dark:text-white/40 px-5 py-2 hover:text-[#176A21] transition-all active:scale-90 duration-300">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-widest uppercase">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#2C2F2E]/50 dark:text-white/40 px-5 py-2 hover:text-[#176A21] transition-all active:scale-90 duration-300">
+<span class="material-symbols-outlined">kitchen</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-widest uppercase">Fridge</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#176A21] text-white rounded-[1.25rem] px-5 py-2 active:scale-90 duration-300">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-widest uppercase">AI Recipe</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#2C2F2E]/50 dark:text-white/40 px-5 py-2 hover:text-[#176A21] transition-all active:scale-90 duration-300">
+<span class="material-symbols-outlined">person</span>
+<span class="font-['Inter'] text-[11px] font-semibold tracking-widest uppercase">Profile</span>
+</div>
+</nav>
+</body></html>
