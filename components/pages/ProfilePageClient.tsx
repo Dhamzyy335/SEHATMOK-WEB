@@ -26,6 +26,15 @@ type ProfileFormState = {
   targetCalories: string;
 };
 
+type ProfileField = "age" | "weight" | "height" | "targetCalories";
+
+type ProfileFieldErrors = Partial<Record<ProfileField, string>>;
+
+type ProfileUpdateErrorResponse = {
+  message?: string;
+  fieldErrors?: Partial<Record<ProfileField, string[]>>;
+};
+
 const activityOptions: { value: ActivityLevel; label: string }[] = [
   { value: "SEDENTARY", label: "Sedentary" },
   { value: "LIGHT", label: "Lightly active" },
@@ -42,6 +51,13 @@ const defaultFormState: ProfileFormState = {
   targetCalories: "",
 };
 
+const profileValidationRanges = {
+  age: { min: 10, max: 120 },
+  weight: { min: 20, max: 400 },
+  height: { min: 100, max: 250 },
+  targetCalories: { min: 1000, max: 6000 },
+} as const;
+
 export default function ProfilePageClient() {
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -50,12 +66,14 @@ export default function ProfilePageClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<ProfileFieldErrors>({});
 
   const loadProfile = async () => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
       setSaveMessage(null);
+      setFieldErrors({});
 
       const response = await fetch("/api/profile", { cache: "no-store" });
 
@@ -94,8 +112,10 @@ export default function ProfilePageClient() {
     setIsSaving(true);
     setErrorMessage(null);
     setSaveMessage(null);
+    setFieldErrors({});
 
     try {
+      const nextFieldErrors: ProfileFieldErrors = {};
       const payload: {
         age?: number;
         weight?: number;
@@ -105,19 +125,65 @@ export default function ProfilePageClient() {
       } = {};
 
       if (formState.age.trim()) {
-        payload.age = Number(formState.age);
+        const parsedAge = Number(formState.age);
+        if (!Number.isFinite(parsedAge) || !Number.isInteger(parsedAge)) {
+          nextFieldErrors.age = "Age must be a whole number.";
+        } else if (
+          parsedAge < profileValidationRanges.age.min ||
+          parsedAge > profileValidationRanges.age.max
+        ) {
+          nextFieldErrors.age = `Age must be between ${profileValidationRanges.age.min} and ${profileValidationRanges.age.max}.`;
+        } else {
+          payload.age = Number(formState.age);
+        }
       }
       if (formState.weight.trim()) {
-        payload.weight = Number(formState.weight);
+        const parsedWeight = Number(formState.weight);
+        if (!Number.isFinite(parsedWeight)) {
+          nextFieldErrors.weight = "Weight must be a number.";
+        } else if (
+          parsedWeight < profileValidationRanges.weight.min ||
+          parsedWeight > profileValidationRanges.weight.max
+        ) {
+          nextFieldErrors.weight = `Weight must be between ${profileValidationRanges.weight.min} and ${profileValidationRanges.weight.max} kg.`;
+        } else {
+          payload.weight = Number(formState.weight);
+        }
       }
       if (formState.height.trim()) {
-        payload.height = Number(formState.height);
+        const parsedHeight = Number(formState.height);
+        if (!Number.isFinite(parsedHeight)) {
+          nextFieldErrors.height = "Height must be a number.";
+        } else if (
+          parsedHeight < profileValidationRanges.height.min ||
+          parsedHeight > profileValidationRanges.height.max
+        ) {
+          nextFieldErrors.height = `Height must be between ${profileValidationRanges.height.min} and ${profileValidationRanges.height.max} cm.`;
+        } else {
+          payload.height = Number(formState.height);
+        }
       }
       if (formState.activityLevel) {
         payload.activityLevel = formState.activityLevel;
       }
       if (formState.targetCalories.trim()) {
-        payload.targetCalories = Number(formState.targetCalories);
+        const parsedTargetCalories = Number(formState.targetCalories);
+        if (!Number.isFinite(parsedTargetCalories) || !Number.isInteger(parsedTargetCalories)) {
+          nextFieldErrors.targetCalories = "Target calories must be a whole number.";
+        } else if (
+          parsedTargetCalories < profileValidationRanges.targetCalories.min ||
+          parsedTargetCalories > profileValidationRanges.targetCalories.max
+        ) {
+          nextFieldErrors.targetCalories = `Target calories must be between ${profileValidationRanges.targetCalories.min} and ${profileValidationRanges.targetCalories.max}.`;
+        } else {
+          payload.targetCalories = Number(formState.targetCalories);
+        }
+      }
+
+      if (Object.keys(nextFieldErrors).length > 0) {
+        setFieldErrors(nextFieldErrors);
+        setErrorMessage("Please correct the highlighted fields.");
+        return;
       }
 
       if (Object.keys(payload).length === 0) {
@@ -136,19 +202,33 @@ export default function ProfilePageClient() {
         return;
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as ProfileResponse | ProfileUpdateErrorResponse;
       if (!response.ok) {
-        throw new Error(result.message ?? "Failed to update profile.");
+        const errorPayload = result as ProfileUpdateErrorResponse;
+
+        if (errorPayload.fieldErrors) {
+          setFieldErrors({
+            age: errorPayload.fieldErrors.age?.[0],
+            weight: errorPayload.fieldErrors.weight?.[0],
+            height: errorPayload.fieldErrors.height?.[0],
+            targetCalories: errorPayload.fieldErrors.targetCalories?.[0],
+          });
+        }
+
+        throw new Error(errorPayload.message ?? "Failed to update profile.");
       }
 
-      setProfile(result as ProfileResponse);
+      const updatedProfile = result as ProfileResponse;
+
+      setProfile(updatedProfile);
       setFormState({
-        age: result.age?.toString() ?? "",
-        weight: result.weight?.toString() ?? "",
-        height: result.height?.toString() ?? "",
-        activityLevel: result.activityLevel ?? "MODERATE",
-        targetCalories: result.targetCalories?.toString() ?? "",
+        age: updatedProfile.age?.toString() ?? "",
+        weight: updatedProfile.weight?.toString() ?? "",
+        height: updatedProfile.height?.toString() ?? "",
+        activityLevel: updatedProfile.activityLevel ?? "MODERATE",
+        targetCalories: updatedProfile.targetCalories?.toString() ?? "",
       });
+      setFieldErrors({});
       setSaveMessage("Profile updated.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unexpected error.");
@@ -218,12 +298,16 @@ export default function ProfilePageClient() {
               <input
                 type="number"
                 value={formState.age}
-                onChange={(event) =>
-                  setFormState((previous) => ({ ...previous, age: event.target.value }))
-                }
+                min={profileValidationRanges.age.min}
+                max={profileValidationRanges.age.max}
+                onChange={(event) => {
+                  setFormState((previous) => ({ ...previous, age: event.target.value }));
+                  setFieldErrors((previous) => ({ ...previous, age: undefined }));
+                }}
                 className="w-full rounded-xl border-none bg-surface-container-low p-3 focus:ring-2 focus:ring-primary/20"
                 placeholder="27"
               />
+              {fieldErrors.age ? <p className="text-xs text-error">{fieldErrors.age}</p> : null}
             </label>
 
             <label className="space-y-1">
@@ -234,12 +318,18 @@ export default function ProfilePageClient() {
                 type="number"
                 step="0.1"
                 value={formState.weight}
-                onChange={(event) =>
-                  setFormState((previous) => ({ ...previous, weight: event.target.value }))
-                }
+                min={profileValidationRanges.weight.min}
+                max={profileValidationRanges.weight.max}
+                onChange={(event) => {
+                  setFormState((previous) => ({ ...previous, weight: event.target.value }));
+                  setFieldErrors((previous) => ({ ...previous, weight: undefined }));
+                }}
                 className="w-full rounded-xl border-none bg-surface-container-low p-3 focus:ring-2 focus:ring-primary/20"
                 placeholder="72"
               />
+              {fieldErrors.weight ? (
+                <p className="text-xs text-error">{fieldErrors.weight}</p>
+              ) : null}
             </label>
 
             <label className="space-y-1">
@@ -250,12 +340,18 @@ export default function ProfilePageClient() {
                 type="number"
                 step="0.1"
                 value={formState.height}
-                onChange={(event) =>
-                  setFormState((previous) => ({ ...previous, height: event.target.value }))
-                }
+                min={profileValidationRanges.height.min}
+                max={profileValidationRanges.height.max}
+                onChange={(event) => {
+                  setFormState((previous) => ({ ...previous, height: event.target.value }));
+                  setFieldErrors((previous) => ({ ...previous, height: undefined }));
+                }}
                 className="w-full rounded-xl border-none bg-surface-container-low p-3 focus:ring-2 focus:ring-primary/20"
                 placeholder="176"
               />
+              {fieldErrors.height ? (
+                <p className="text-xs text-error">{fieldErrors.height}</p>
+              ) : null}
             </label>
 
             <label className="space-y-1">
@@ -288,15 +384,21 @@ export default function ProfilePageClient() {
             <input
               type="number"
               value={formState.targetCalories}
-              onChange={(event) =>
+              min={profileValidationRanges.targetCalories.min}
+              max={profileValidationRanges.targetCalories.max}
+              onChange={(event) => {
                 setFormState((previous) => ({
                   ...previous,
                   targetCalories: event.target.value,
-                }))
-              }
+                }));
+                setFieldErrors((previous) => ({ ...previous, targetCalories: undefined }));
+              }}
               className="w-full rounded-xl border-none bg-surface-container-low p-3 focus:ring-2 focus:ring-primary/20"
               placeholder="Auto from TDEE"
             />
+            {fieldErrors.targetCalories ? (
+              <p className="text-xs text-error">{fieldErrors.targetCalories}</p>
+            ) : null}
           </label>
 
           <button

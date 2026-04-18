@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import { requirePageUserId } from "@/lib/page-auth";
+import { prisma } from "@/lib/prisma";
 
 type NutritionBar = {
   label: string;
+  value: number;
   height: number;
   barClassName: string;
 };
@@ -12,51 +15,31 @@ type RecipeIngredient = {
   id: string;
   name: string;
   amount: string;
-  checked?: boolean;
 };
 
-type RecipeStep = {
-  order: number;
-  title: string;
-  description: string;
-  highlighted?: boolean;
+const fallbackRecipeImage =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuDi6bGdgLcUj5dGGU1vs-w5dmR4U6PBnjONwmiFFCTj0sQ62GOvnglEj2dzynaR-PS825zCpaFJAJCekxXi9ZP2XyClB-xh5O3owF_8A2PbnxR1UDRUfen1VWggisPIDmAWGb6E-Rds71EA9GdVdQ7v2dyClDkYBQGrsUCwS3ipcm6vATbFBxyNNWOktxgcCxx9tq7doqtDGvP6Mak202wPQFLWUiTDTKnGvGTo6cTmqGd5OIA9p-HwNcosxqrErcXfiCaXQzjHr9cw";
+
+const toStepArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((entry): entry is string => typeof entry === "string");
 };
 
-const nutritionBars: NutritionBar[] = [
-  { label: "Protein", height: 80, barClassName: "bg-primary" },
-  { label: "Carbs", height: 45, barClassName: "bg-secondary-dim" },
-  { label: "Fats", height: 60, barClassName: "bg-tertiary" },
-  { label: "Fiber", height: 30, barClassName: "bg-outline-variant" },
-];
+const formatNumber = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return "0";
+  }
 
-const ingredients: RecipeIngredient[] = [
-  { id: "halloumi", name: "Fresh Halloumi Cheese", amount: "200g", checked: true },
-  { id: "chickpeas", name: "Organic Chickpeas", amount: "1 Can" },
-  { id: "pomegranate", name: "Pomegranate Seeds", amount: "1/2 Cup" },
-  { id: "mint", name: "Fresh Mint Leaves", amount: "1 Bunch" },
-];
+  return Number.isInteger(value) ? value.toString() : value.toFixed(1).replace(/\.0$/, "");
+};
 
-const steps: RecipeStep[] = [
-  {
-    order: 1,
-    title: "Prep the Halloumi",
-    description:
-      "Slice the halloumi into 1cm thick rectangles. Pat dry with a paper towel to ensure a perfect golden crust when frying.",
-    highlighted: true,
-  },
-  {
-    order: 2,
-    title: "Toast the Chickpeas",
-    description:
-      "In a large skillet over medium heat, toss chickpeas with a drizzle of olive oil and smoked paprika until slightly crispy, about 8 minutes.",
-  },
-  {
-    order: 3,
-    title: "Assemble & Dress",
-    description:
-      "Combine the warm halloumi with fresh mint, pomegranate, and chickpeas. Whisk the lemon juice and olive oil for a light finishing touch.",
-  },
-];
+const formatIngredientAmount = (quantity: number, unit: string) => {
+  const formattedQuantity = formatNumber(quantity);
+  return unit ? `${formattedQuantity} ${unit}` : formattedQuantity;
+};
 
 export default async function RecipeDetailsPage({
   params,
@@ -65,6 +48,47 @@ export default async function RecipeDetailsPage({
 }) {
   await requirePageUserId();
   const { id } = await params;
+
+  const recipe = await prisma.recipe.findUnique({
+    where: { id },
+    include: {
+      recipeIngredients: {
+        include: {
+          ingredient: true,
+        },
+      },
+    },
+  });
+
+  if (!recipe) {
+    notFound();
+  }
+
+  const ingredientRows: RecipeIngredient[] = recipe.recipeIngredients.map((relation) => ({
+    id: relation.id,
+    name: relation.ingredient.name,
+    amount: formatIngredientAmount(relation.quantity, relation.unit),
+  }));
+
+  const rawSteps = toStepArray(recipe.steps);
+  const stepRows =
+    rawSteps.length > 0 ? rawSteps : ["No instructions available for this recipe yet."];
+
+  const baseNutrition = [
+    { label: "Protein", value: recipe.protein ?? 0, barClassName: "bg-primary" },
+    { label: "Carbs", value: recipe.carbs ?? 0, barClassName: "bg-secondary-dim" },
+    { label: "Fats", value: recipe.fat ?? 0, barClassName: "bg-tertiary" },
+    { label: "Fiber", value: recipe.fiber ?? 0, barClassName: "bg-outline-variant" },
+  ];
+
+  const maxBarValue = Math.max(...baseNutrition.map((item) => item.value), 1);
+  const nutritionBars: NutritionBar[] = baseNutrition.map((item) => ({
+    ...item,
+    height: Math.max(10, Math.round((item.value / maxBarValue) * 100)),
+  }));
+
+  const estimatedCookTime = rawSteps.length > 0 ? rawSteps.length * 10 : null;
+  const estimatedServings = ingredientRows.length > 0 ? Math.max(1, Math.ceil(ingredientRows.length / 2)) : null;
 
   return (
     <div className="min-h-screen bg-surface font-body leading-relaxed text-on-surface pb-32">
@@ -94,8 +118,8 @@ export default async function RecipeDetailsPage({
       <main className="pb-24">
         <div className="relative h-[530px] w-full overflow-hidden">
           <img
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDi6bGdgLcUj5dGGU1vs-w5dmR4U6PBnjONwmiFFCTj0sQ62GOvnglEj2dzynaR-PS825zCpaFJAJCekxXi9ZP2XyClB-xh5O3owF_8A2PbnxR1UDRUfen1VWggisPIDmAWGb6E-Rds71EA9GdVdQ7v2dyClDkYBQGrsUCwS3ipcm6vATbFBxyNNWOktxgcCxx9tq7doqtDGvP6Mak202wPQFLWUiTDTKnGvGTo6cTmqGd5OIA9p-HwNcosxqrErcXfiCaXQzjHr9cw"
-            alt="Vibrant Summer Salad"
+            src={recipe.imageUrl ?? fallbackRecipeImage}
+            alt={recipe.name}
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
@@ -108,12 +132,10 @@ export default async function RecipeDetailsPage({
                 Editorial Choice
               </span>
               <h1 className="font-headline text-4xl font-extrabold tracking-tight text-on-surface">
-                Summer Harvest Halloumi Bowl
+                {recipe.name}
               </h1>
               <p className="font-medium leading-relaxed text-on-surface-variant">
-                A refreshing blend of charred halloumi, fresh mint, and
-                protein-packed chickpeas, drizzled with a citrus AI-optimized
-                dressing.
+                {recipe.description ?? "No description available for this recipe."}
               </p>
               <span className="text-xs font-bold uppercase tracking-widest text-primary">
                 Recipe ID: {id}
@@ -126,7 +148,9 @@ export default async function RecipeDetailsPage({
                 <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
                   Cook Time
                 </span>
-                <span className="font-headline text-lg font-bold">25 min</span>
+                <span className="font-headline text-lg font-bold">
+                  {estimatedCookTime === null ? "N/A" : `${estimatedCookTime} min`}
+                </span>
               </div>
               <div className="flex flex-col items-center justify-center rounded-xl bg-surface-container-low p-4 text-center">
                 <span className="material-symbols-outlined mb-2 text-secondary">
@@ -135,14 +159,16 @@ export default async function RecipeDetailsPage({
                 <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
                   Calories
                 </span>
-                <span className="font-headline text-lg font-bold">420 kcal</span>
+                <span className="font-headline text-lg font-bold">{recipe.calories ?? 0} kcal</span>
               </div>
               <div className="flex flex-col items-center justify-center rounded-xl bg-surface-container-low p-4 text-center">
                 <span className="material-symbols-outlined mb-2 text-tertiary">groups</span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
                   Servings
                 </span>
-                <span className="font-headline text-lg font-bold">2 pers</span>
+                <span className="font-headline text-lg font-bold">
+                  {estimatedServings === null ? "N/A" : `${estimatedServings} pers`}
+                </span>
               </div>
             </div>
 
@@ -168,62 +194,65 @@ export default async function RecipeDetailsPage({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex justify-between border-b border-outline-variant/10 py-2">
-                  <span className="text-sm font-medium text-on-surface-variant">Vitamin C</span>
-                  <span className="text-sm font-bold">85% DV</span>
+                  <span className="text-sm font-medium text-on-surface-variant">Protein</span>
+                  <span className="text-sm font-bold">{formatNumber(recipe.protein)} g</span>
                 </div>
                 <div className="flex justify-between border-b border-outline-variant/10 py-2">
-                  <span className="text-sm font-medium text-on-surface-variant">Iron</span>
-                  <span className="text-sm font-bold">12% DV</span>
+                  <span className="text-sm font-medium text-on-surface-variant">Carbs</span>
+                  <span className="text-sm font-bold">{formatNumber(recipe.carbs)} g</span>
                 </div>
               </div>
             </section>
 
             <section className="mb-12">
               <h2 className="mb-6 font-headline text-2xl font-bold">Ingredients</h2>
-              <div className="space-y-4">
-                {ingredients.map((ingredient) => (
-                  <label
-                    key={ingredient.id}
-                    htmlFor={ingredient.id}
-                    className="group flex cursor-pointer items-center gap-4"
-                  >
-                    <input
-                      id={ingredient.id}
-                      type="checkbox"
-                      defaultChecked={ingredient.checked}
-                      className="h-6 w-6 rounded-lg border-outline-variant text-primary focus:ring-0"
-                    />
-                    <div className="flex flex-1 justify-between">
-                      <span className="text-on-surface transition-colors group-hover:text-primary">
-                        {ingredient.name}
-                      </span>
-                      <span className="font-label text-sm tracking-wide text-on-surface-variant">
-                        {ingredient.amount}
-                      </span>
-                    </div>
-                  </label>
-                ))}
-              </div>
+              {ingredientRows.length > 0 ? (
+                <div className="space-y-4">
+                  {ingredientRows.map((ingredient) => (
+                    <label
+                      key={ingredient.id}
+                      htmlFor={ingredient.id}
+                      className="group flex cursor-pointer items-center gap-4"
+                    >
+                      <input
+                        id={ingredient.id}
+                        type="checkbox"
+                        className="h-6 w-6 rounded-lg border-outline-variant text-primary focus:ring-0"
+                      />
+                      <div className="flex flex-1 justify-between">
+                        <span className="text-on-surface transition-colors group-hover:text-primary">
+                          {ingredient.name}
+                        </span>
+                        <span className="font-label text-sm tracking-wide text-on-surface-variant">
+                          {ingredient.amount}
+                        </span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-on-surface-variant">No ingredients available.</p>
+              )}
             </section>
 
             <section>
               <h2 className="mb-6 font-headline text-2xl font-bold">Instructions</h2>
               <div className="space-y-8">
-                {steps.map((step) => (
-                  <div key={step.order} className="flex gap-6">
+                {stepRows.map((step, index) => (
+                  <div key={`${id}-step-${index + 1}`} className="flex gap-6">
                     <div
                       className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full font-headline font-bold ${
-                        step.highlighted
+                        index === 0
                           ? "editorial-gradient text-white"
                           : "bg-surface-container-highest text-on-surface"
                       }`}
                     >
-                      {step.order}
+                      {index + 1}
                     </div>
                     <div className="flex-1">
-                      <h3 className="mb-2 font-bold">{step.title}</h3>
+                      <h3 className="mb-2 font-bold">Step {index + 1}</h3>
                       <p className="text-sm leading-relaxed text-on-surface-variant">
-                        {step.description}
+                        {step}
                       </p>
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import TopAppBar from "@/components/TopAppBar";
@@ -36,10 +36,12 @@ type FridgeHighlight = {
 
 type DashboardSummary = {
   targetCalories: number;
-  intakeCalories: number;
-  outtakeCalories: number;
+  totalIntakeToday: number;
+  totalOuttakeToday: number;
   remainingCalories: number;
 };
+
+type LogTypeValue = "INTAKE" | "OUTTAKE";
 
 const quickActions: QuickAction[] = [
   {
@@ -128,8 +130,8 @@ const circumference = 552.92;
 
 const fallbackSummary: DashboardSummary = {
   targetCalories: 2000,
-  intakeCalories: 750,
-  outtakeCalories: 0,
+  totalIntakeToday: 750,
+  totalOuttakeToday: 0,
   remainingCalories: 1250,
 };
 
@@ -138,46 +140,124 @@ export default function DashboardPageClient() {
   const [summary, setSummary] = useState<DashboardSummary>(fallbackSummary);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [activeLogType, setActiveLogType] = useState<LogTypeValue | null>(null);
+  const [logCalories, setLogCalories] = useState("");
+  const [isSubmittingLog, setIsSubmittingLog] = useState(false);
+  const [logErrorMessage, setLogErrorMessage] = useState<string | null>(null);
+
+  const fetchSummary = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      const response = await fetch("/api/dashboard/summary", {
+        cache: "no-store",
+      });
+
+      if (response.status === 401) {
+        router.replace("/login");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch summary (${response.status})`);
+      }
+
+      const data = (await response.json()) as DashboardSummary;
+      setSummary(data);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unexpected error.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router]);
 
   useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        setIsLoading(true);
-        setErrorMessage(null);
-
-        const response = await fetch("/api/dashboard/summary", {
-          cache: "no-store",
-        });
-
-        if (response.status === 401) {
-          router.replace("/login");
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch summary (${response.status})`);
-        }
-
-        const data = (await response.json()) as DashboardSummary;
-        setSummary(data);
-      } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Unexpected error.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     void fetchSummary();
-  }, [router]);
+  }, [fetchSummary]);
+
+  const openLogModal = (type: LogTypeValue) => {
+    setActiveLogType(type);
+    setLogCalories("");
+    setLogErrorMessage(null);
+  };
+
+  const closeLogModal = () => {
+    if (isSubmittingLog) {
+      return;
+    }
+
+    setActiveLogType(null);
+    setLogCalories("");
+    setLogErrorMessage(null);
+  };
+
+  const handleQuickActionClick = (action: QuickAction) => {
+    if (action.title === "Add Activity") {
+      openLogModal("OUTTAKE");
+    }
+  };
+
+  const handleLogSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!activeLogType) {
+      return;
+    }
+
+    const parsedCalories = Number(logCalories);
+    if (!Number.isInteger(parsedCalories) || parsedCalories < 1 || parsedCalories > 10000) {
+      setLogErrorMessage("Calories must be a whole number between 1 and 10000.");
+      return;
+    }
+
+    try {
+      setIsSubmittingLog(true);
+      setLogErrorMessage(null);
+
+      const response = await fetch("/api/logs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: activeLogType,
+          calories: parsedCalories,
+        }),
+      });
+
+      if (response.status === 401) {
+        router.replace("/login");
+        return;
+      }
+
+      const result = (await response.json().catch(() => ({}))) as {
+        message?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(result.message ?? "Failed to create calorie log.");
+      }
+
+      setActiveLogType(null);
+      setLogCalories("");
+      await fetchSummary();
+    } catch (error) {
+      setLogErrorMessage(error instanceof Error ? error.message : "Unexpected error.");
+    } finally {
+      setIsSubmittingLog(false);
+    }
+  };
 
   const progressRatio = useMemo(() => {
     if (summary.targetCalories <= 0) {
       return 0;
     }
 
-    const ratio = summary.intakeCalories / summary.targetCalories;
+    const netCalories = summary.totalIntakeToday - summary.totalOuttakeToday;
+    const ratio = netCalories / summary.targetCalories;
     return Math.max(0, Math.min(1, ratio));
-  }, [summary.intakeCalories, summary.targetCalories]);
+  }, [summary.targetCalories, summary.totalIntakeToday, summary.totalOuttakeToday]);
 
   const progressPercent = Math.round(progressRatio * 100);
   const strokeDashOffset = circumference - progressRatio * circumference;
@@ -242,6 +322,7 @@ export default function DashboardPageClient() {
                 <div className="flex gap-4 pt-2">
                   <button
                     type="button"
+                    onClick={() => openLogModal("INTAKE")}
                     className="flex items-center gap-2 rounded-xl bg-on-primary px-6 py-3 font-bold text-primary transition-transform active:scale-95"
                   >
                     <span className="material-symbols-outlined text-sm">restaurant</span>
@@ -283,7 +364,12 @@ export default function DashboardPageClient() {
               }
 
               return (
-                <button key={action.title} type="button" className={action.cardClassName}>
+                <button
+                  key={action.title}
+                  type="button"
+                  onClick={() => handleQuickActionClick(action)}
+                  className={action.cardClassName}
+                >
                   {content}
                 </button>
               );
@@ -379,6 +465,78 @@ export default function DashboardPageClient() {
           </div>
         </section>
       </main>
+
+      {activeLogType ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-surface p-6 editorial-shadow">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-headline text-2xl font-bold text-on-surface">
+                  {activeLogType === "INTAKE" ? "Log Meal" : "Add Activity"}
+                </h3>
+                <p className="mt-1 text-sm text-on-surface-variant">
+                  {activeLogType === "INTAKE"
+                    ? "Enter calories consumed from your meal."
+                    : "Enter calories burned from your activity."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeLogModal}
+                disabled={isSubmittingLog}
+                className="rounded-lg p-1 text-on-surface-variant transition-colors hover:bg-surface-container-low disabled:opacity-50"
+                aria-label="Close calorie log modal"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <form className="mt-5 space-y-4" onSubmit={handleLogSubmit}>
+              <label className="block space-y-1">
+                <span className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant">
+                  Calories
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={10000}
+                  step={1}
+                  value={logCalories}
+                  onChange={(event) => setLogCalories(event.target.value)}
+                  placeholder="e.g. 500"
+                  className="w-full rounded-xl border border-outline-variant/30 bg-surface-container-low px-4 py-3 text-on-surface focus:border-primary focus:outline-none"
+                />
+              </label>
+
+              {logErrorMessage ? (
+                <p className="text-sm font-semibold text-error">{logErrorMessage}</p>
+              ) : null}
+
+              <div className="flex justify-end gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={closeLogModal}
+                  disabled={isSubmittingLog}
+                  className="rounded-xl border border-outline-variant/40 px-4 py-2 font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingLog}
+                  className="rounded-xl bg-primary px-4 py-2 font-semibold text-on-primary transition-opacity hover:opacity-95 disabled:opacity-70"
+                >
+                  {isSubmittingLog
+                    ? "Saving..."
+                    : activeLogType === "INTAKE"
+                      ? "Save Meal"
+                      : "Save Activity"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       <BottomNav />
     </div>

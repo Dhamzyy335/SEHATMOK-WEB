@@ -35,19 +35,20 @@ export async function GET(
       id: recipe.id,
       name: recipe.name,
       description: recipe.description,
-      steps: toStepArray(recipe.steps),
       imageUrl: recipe.imageUrl,
       calories: recipe.calories,
       protein: recipe.protein,
       carbs: recipe.carbs,
       fat: recipe.fat,
       fiber: recipe.fiber,
+      servings: null,
+      cookTimeMinutes: null,
       ingredients: recipe.recipeIngredients.map((relation) => ({
-        id: relation.ingredient.id,
         name: relation.ingredient.name,
         quantity: relation.quantity,
         unit: relation.unit,
       })),
+      steps: toStepArray(recipe.steps),
     });
   } catch (error) {
     return NextResponse.json(

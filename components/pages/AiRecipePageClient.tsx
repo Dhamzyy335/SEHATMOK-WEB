@@ -17,15 +17,15 @@ type FridgeItemOption = {
 type RecommendationItem = {
   id: string;
   name: string;
-  description: string | null;
   imageUrl: string | null;
   calories: number | null;
   protein: number | null;
   carbs: number | null;
   fat: number | null;
-  fiber: number | null;
   matchPercent: number;
-  score: number;
+  ingredientScore: number;
+  calorieScore: number;
+  finalScore: number;
   explanation: string;
 };
 
@@ -45,16 +45,16 @@ const categoryIconMap: Record<string, string> = {
 const fallbackRecommendation: RecommendationItem = {
   id: "placeholder",
   name: "Zesty Avocado Bowl",
-  description: "Ready to score using your selected ingredients.",
   imageUrl:
     "https://lh3.googleusercontent.com/aida-public/AB6AXuAtnULxlS3Y-iC25sgtcZc129JRE3PYMoGkEmmMW1cd5Y7sE_5duJysPMIQEuvarHj_VsqEht8odI6v5kwrBr2y_Llrsm0dXsYU09h2OVg3Akj4AC-3AMovzOzmu6y7s7sGN5bgFBFDlpOPBEzl_zlJfQqqwHlDGR3AjspxrPHo9MzXuEhAGX-ulzuEItYh7Cr-Cc2P212uSA-eDRns2qZZ12Xdw51MqhGJgf5TyxU3fttNZyXdzt_4M0BMvNlaxPiMB6SsCb2E3bAe",
   calories: 340,
   protein: 24,
   carbs: 12,
   fat: 18,
-  fiber: 8,
   matchPercent: 0,
-  score: 0,
+  ingredientScore: 0,
+  calorieScore: 0,
+  finalScore: 0,
   explanation: "Select ingredients and generate recommendations.",
 };
 

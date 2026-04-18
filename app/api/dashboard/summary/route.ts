@@ -46,14 +46,15 @@ export async function GET() {
     }
 
     const targetCalories = user.targetCalories ?? 0;
-    const intakeCalories = intakeAggregate._sum.calories ?? 0;
-    const outtakeCalories = outtakeAggregate._sum.calories ?? 0;
-    const remainingCalories = targetCalories - intakeCalories + outtakeCalories;
+    const totalIntakeToday = intakeAggregate._sum.calories ?? 0;
+    const totalOuttakeToday = outtakeAggregate._sum.calories ?? 0;
+    const remainingCalories =
+      targetCalories - totalIntakeToday + totalOuttakeToday;
 
     return NextResponse.json({
       targetCalories,
-      intakeCalories,
-      outtakeCalories,
+      totalIntakeToday,
+      totalOuttakeToday,
       remainingCalories,
     });
   } catch (error) {

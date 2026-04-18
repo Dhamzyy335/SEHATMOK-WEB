@@ -10,67 +10,87 @@ const clamp01 = (value: number): number => {
   return value;
 };
 
-export const normalizeIngredientName = (name: string): string => {
-  return name.trim().toLowerCase().replace(/\s+/g, " ");
-};
-
 export const toScorePrecision = (score: number): number => {
-  return Math.round(score * 10000) / 10000;
+  return Math.round(clamp01(score) * 10000) / 10000;
 };
 
-export type IngredientOverlapResult = {
-  score: number;
-  overlapCount: number;
-  totalIngredients: number;
-  missingIngredients: string[];
+export const normalizeName = (name: string): string => {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ");
 };
 
-export const calculateIngredientOverlap = (
-  availableIngredients: Set<string>,
+export const isMatch = (a: string, b: string): boolean => {
+  const normalizedA = normalizeName(a);
+  const normalizedB = normalizeName(b);
+
+  if (normalizedA.length === 0 || normalizedB.length === 0) {
+    return false;
+  }
+
+  return normalizedA.includes(normalizedB) || normalizedB.includes(normalizedA);
+};
+
+export type IngredientScoreResult = {
+  matchedCount: number;
+  totalRequiredCount: number;
+  ingredientScore: number;
+  matchPercent: number;
+};
+
+export const calculateIngredientScore = (
+  selectedIngredientNames: string[],
   recipeIngredientNames: string[],
-): IngredientOverlapResult => {
-  const normalizedRecipeIngredients = Array.from(
+): IngredientScoreResult => {
+  const normalizedSelectedIngredients = Array.from(
     new Set(
-      recipeIngredientNames
-        .map((name) => normalizeIngredientName(name))
+      selectedIngredientNames
+        .map((name) => normalizeName(name))
         .filter((name) => name.length > 0),
     ),
   );
 
+  const normalizedRecipeIngredients = recipeIngredientNames
+    .map((name) => normalizeName(name))
+    .filter((name) => name.length > 0);
+
   if (normalizedRecipeIngredients.length === 0) {
     return {
-      score: 0,
-      overlapCount: 0,
-      totalIngredients: 0,
-      missingIngredients: [],
+      matchedCount: 0,
+      totalRequiredCount: 0,
+      ingredientScore: 0,
+      matchPercent: 0,
     };
   }
 
-  let overlapCount = 0;
-  const missingIngredients: string[] = [];
+  const matchedCount = normalizedRecipeIngredients.reduce((count, ingredientName) => {
+    const hasMatch = normalizedSelectedIngredients.some((selectedName) =>
+      isMatch(selectedName, ingredientName),
+    );
 
-  for (const ingredientName of normalizedRecipeIngredients) {
-    if (availableIngredients.has(ingredientName)) {
-      overlapCount += 1;
-    } else {
-      missingIngredients.push(ingredientName);
-    }
-  }
+    return hasMatch ? count + 1 : count;
+  }, 0);
+
+  const ingredientScore = toScorePrecision(
+    matchedCount / normalizedRecipeIngredients.length,
+  );
 
   return {
-    score: toScorePrecision(overlapCount / normalizedRecipeIngredients.length),
-    overlapCount,
-    totalIngredients: normalizedRecipeIngredients.length,
-    missingIngredients,
+    matchedCount,
+    totalRequiredCount: normalizedRecipeIngredients.length,
+    ingredientScore,
+    matchPercent: Math.round(ingredientScore * 100),
   };
 };
 
-export const calculateCalorieCloseness = (
+export const calculateCalorieScore = (
   recipeCalories: number | null,
   targetCalories: number | null,
-): number | null => {
+): number => {
   if (targetCalories === null || targetCalories <= 0 || recipeCalories === null) {
-    return null;
+    return 0;
   }
 
   const deviation = Math.abs(recipeCalories - targetCalories);
@@ -81,46 +101,25 @@ export const calculateCalorieCloseness = (
 
 export const calculateFinalRecommendationScore = (
   ingredientScore: number,
-  calorieScore: number | null,
+  calorieScore: number,
 ): number => {
-  if (calorieScore === null) {
-    return toScorePrecision(ingredientScore);
-  }
-
   return toScorePrecision(0.6 * ingredientScore + 0.4 * calorieScore);
 };
 
 type ExplanationOptions = {
-  overlapCount: number;
-  totalIngredients: number;
-  calorieScore: number | null;
+  matchedCount: number;
+  totalRequiredCount: number;
+  calorieScore: number;
   recipeCalories: number | null;
   targetCalories: number | null;
-  dietaryPreferences: string;
 };
 
 export const createRecommendationExplanation = ({
-  overlapCount,
-  totalIngredients,
+  matchedCount,
+  totalRequiredCount,
   calorieScore,
   recipeCalories,
   targetCalories,
-  dietaryPreferences,
 }: ExplanationOptions): string => {
-  const ingredientSegment =
-    totalIngredients === 0
-      ? "Ingredient mapping is limited for this recipe."
-      : `Matches ${overlapCount}/${totalIngredients} required ingredients.`;
-
-  const calorieSegment =
-    calorieScore === null || targetCalories === null || targetCalories <= 0
-      ? "No calorie score available yet."
-      : `${Math.round(calorieScore * 100)}% calorie closeness (${recipeCalories ?? 0} vs ${targetCalories} kcal).`;
-
-  const preferenceValue = dietaryPreferences.trim();
-  const preferenceSegment = preferenceValue
-    ? ` Preference noted: ${preferenceValue.slice(0, 80)}.`
-    : "";
-
-  return `${ingredientSegment} ${calorieSegment}${preferenceSegment}`;
+  return `Matches ${matchedCount}/${totalRequiredCount} ingredients. Calorie closeness: ${Math.round(calorieScore * 100)}% (${recipeCalories ?? 0} vs ${targetCalories ?? 0}).`;
 };

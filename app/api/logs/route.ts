@@ -4,13 +4,12 @@ import { z } from "zod";
 import { UnauthorizedError, requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const createLogSchema = z.object({
-  type: z.nativeEnum(LogType),
-  calories: z.coerce.number().int().nonnegative(),
-  protein: z.coerce.number().nonnegative().optional(),
-  carbs: z.coerce.number().nonnegative().optional(),
-  fat: z.coerce.number().nonnegative().optional(),
-});
+const createLogSchema = z
+  .object({
+    type: z.nativeEnum(LogType),
+    calories: z.coerce.number().int().min(1).max(10000),
+  })
+  .strict();
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,7 +53,7 @@ export async function POST(request: Request) {
   try {
     const userId = await requireUserId();
 
-    const payload = await request.json();
+    const payload = await request.json().catch(() => ({}));
     const parsedPayload = createLogSchema.safeParse(payload);
 
     if (!parsedPayload.success) {
@@ -72,9 +71,7 @@ export async function POST(request: Request) {
         userId,
         type: parsedPayload.data.type,
         calories: parsedPayload.data.calories,
-        protein: parsedPayload.data.protein,
-        carbs: parsedPayload.data.carbs,
-        fat: parsedPayload.data.fat,
+        createdAt: new Date(),
       },
     });
 

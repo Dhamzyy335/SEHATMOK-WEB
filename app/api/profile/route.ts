@@ -8,10 +8,10 @@ import { prisma } from "@/lib/prisma";
 const profileUpdateSchema = z
   .object({
     age: z.coerce.number().int().min(10).max(120).optional(),
-    weight: z.coerce.number().positive().max(500).optional(),
-    height: z.coerce.number().positive().max(300).optional(),
+    weight: z.coerce.number().min(20).max(400).optional(),
+    height: z.coerce.number().min(100).max(250).optional(),
     activityLevel: z.nativeEnum(ActivityLevel).optional(),
-    targetCalories: z.coerce.number().int().positive().max(10000).optional(),
+    targetCalories: z.coerce.number().int().min(1000).max(6000).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one field is required for update.",
@@ -72,10 +72,13 @@ export async function PUT(request: Request) {
     const payload = await request.json();
     const parsedPayload = profileUpdateSchema.safeParse(payload);
     if (!parsedPayload.success) {
+      const flattened = parsedPayload.error.flatten();
+
       return NextResponse.json(
         {
           message: "Invalid profile payload.",
-          errors: parsedPayload.error.flatten(),
+          fieldErrors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
         },
         { status: 400 },
       );

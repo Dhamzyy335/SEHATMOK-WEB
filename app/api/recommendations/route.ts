@@ -3,17 +3,15 @@ import { z } from "zod";
 import { UnauthorizedError, requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
-  calculateCalorieCloseness,
+  calculateCalorieScore,
   calculateFinalRecommendationScore,
-  calculateIngredientOverlap,
+  calculateIngredientScore,
   createRecommendationExplanation,
-  normalizeIngredientName,
 } from "@/lib/recommendations";
 
 const recommendationRequestSchema = z.object({
-  selectedFridgeItemIds: z.array(z.string().trim().min(1)).optional(),
-  dietaryPreferences: z.string().trim().max(500).optional().default(""),
-  limit: z.coerce.number().int().min(5).max(10).optional(),
+  selectedFridgeItemIds: z.array(z.string().trim().min(1)),
+  dietaryPreferences: z.string().trim().max(500).optional(),
 });
 
 export async function POST(request: Request) {
@@ -27,6 +25,15 @@ export async function POST(request: Request) {
         {
           message: "Invalid recommendations payload.",
           errors: parsedPayload.error.flatten(),
+        },
+        { status: 400 },
+      );
+    }
+
+    if (parsedPayload.data.selectedFridgeItemIds.length === 0) {
+      return NextResponse.json(
+        {
+          message: "selectedFridgeItemIds must contain at least one item.",
         },
         { status: 400 },
       );
@@ -56,23 +63,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "User not found." }, { status: 404 });
     }
 
-    const selectedIdSet =
-      parsedPayload.data.selectedFridgeItemIds &&
-      parsedPayload.data.selectedFridgeItemIds.length > 0
-        ? new Set(parsedPayload.data.selectedFridgeItemIds)
-        : null;
-
-    const selectedFridgeItems =
-      selectedIdSet === null
-        ? fridgeItems
-        : fridgeItems.filter((item) => selectedIdSet.has(item.id));
-
-    const effectiveFridgeItems =
-      selectedFridgeItems.length > 0 ? selectedFridgeItems : fridgeItems;
-
-    const availableIngredients = new Set(
-      effectiveFridgeItems.map((item) => normalizeIngredientName(item.name)),
+    const selectedIdSet = new Set(parsedPayload.data.selectedFridgeItemIds);
+    const selectedFridgeItems = fridgeItems.filter((item) =>
+      selectedIdSet.has(item.id),
     );
+    const selectedIngredientNames = selectedFridgeItems.map((item) => item.name);
 
     const scoredRecipes = recipes
       .map((recipe) => {
@@ -80,65 +75,52 @@ export async function POST(request: Request) {
           (relation) => relation.ingredient.name,
         );
 
-        const overlap = calculateIngredientOverlap(
-          availableIngredients,
+        const ingredientScoreResult = calculateIngredientScore(
+          selectedIngredientNames,
           recipeIngredientNames,
         );
-        const calorieScore = calculateCalorieCloseness(
+        const calorieScore = calculateCalorieScore(
           recipe.calories,
           user.targetCalories,
         );
         const finalScore = calculateFinalRecommendationScore(
-          overlap.score,
+          ingredientScoreResult.ingredientScore,
           calorieScore,
         );
-        const matchPercent = Math.round(finalScore * 100);
 
         return {
           id: recipe.id,
           name: recipe.name,
-          description: recipe.description,
           imageUrl: recipe.imageUrl,
           calories: recipe.calories,
           protein: recipe.protein,
           carbs: recipe.carbs,
           fat: recipe.fat,
-          fiber: recipe.fiber,
-          ingredientScore: overlap.score,
+          matchPercent: ingredientScoreResult.matchPercent,
+          ingredientScore: ingredientScoreResult.ingredientScore,
           calorieScore,
-          score: finalScore,
           finalScore,
-          matchPercent,
           explanation: createRecommendationExplanation({
-            overlapCount: overlap.overlapCount,
-            totalIngredients: overlap.totalIngredients,
+            matchedCount: ingredientScoreResult.matchedCount,
+            totalRequiredCount: ingredientScoreResult.totalRequiredCount,
             calorieScore,
             recipeCalories: recipe.calories,
             targetCalories: user.targetCalories,
-            dietaryPreferences: parsedPayload.data.dietaryPreferences ?? "",
           }),
-          ingredients: recipe.recipeIngredients.map((relation) => ({
-            id: relation.ingredient.id,
-            name: relation.ingredient.name,
-            quantity: relation.quantity,
-            unit: relation.unit,
-          })),
         };
       })
       .sort(
         (a, b) =>
-          b.score - a.score ||
+          b.finalScore - a.finalScore ||
           b.ingredientScore - a.ingredientScore ||
           a.name.localeCompare(b.name),
       );
 
-    const limit = parsedPayload.data.limit ?? 5;
-
     return NextResponse.json({
       targetCalories: user.targetCalories,
-      selectedFridgeItems: effectiveFridgeItems,
+      selectedFridgeItems,
       dietaryPreferences: parsedPayload.data.dietaryPreferences ?? "",
-      recommendations: scoredRecipes.slice(0, limit),
+      recommendations: scoredRecipes.slice(0, 10),
     });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
