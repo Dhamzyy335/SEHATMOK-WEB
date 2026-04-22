@@ -33,6 +33,38 @@ type RecommendationsResponse = {
   recommendations: RecommendationItem[];
 };
 
+type AiRecipeCandidate = {
+  name: string;
+  description: string;
+  servings: number;
+  cookTimeMinutes: number;
+  ingredients: Array<{
+    name: string;
+    quantity: number;
+    unit: string;
+  }>;
+  steps: string[];
+  nutrition: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+  };
+};
+
+type AiRecipeCandidatesResponse = {
+  candidates: AiRecipeCandidate[];
+};
+
+type AiSaveRecipeResponse = {
+  recipeId: string;
+};
+
+type BookmarkListResponse = {
+  recipeIds: string[];
+};
+
 const categoryIconMap: Record<string, string> = {
   vegetables: "eco",
   fruits: "nutrition",
@@ -71,16 +103,128 @@ const formatMacro = (value: number | null): string => {
   return Number.isInteger(value) ? value.toString() : value.toFixed(1);
 };
 
+const AI_RECIPE_STORAGE_KEY = "aiRecipe:lastState";
+const AI_RECIPE_STATE_MAX_AGE_MS = 30 * 60 * 1000;
+
+type AiRecipeStoredState = {
+  ts: number;
+  selectedFridgeItemIds: string[];
+  dietaryPreferences: string;
+  candidates: AiRecipeCandidate[];
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const isCandidate = (value: unknown): value is AiRecipeCandidate => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const nutrition = value.nutrition;
+
+  return (
+    typeof value.name === "string" &&
+    typeof value.description === "string" &&
+    isNumber(value.servings) &&
+    isNumber(value.cookTimeMinutes) &&
+    Array.isArray(value.ingredients) &&
+    Array.isArray(value.steps) &&
+    isRecord(nutrition) &&
+    isNumber(nutrition.calories) &&
+    isNumber(nutrition.protein) &&
+    isNumber(nutrition.carbs) &&
+    isNumber(nutrition.fat) &&
+    isNumber(nutrition.fiber)
+  );
+};
+
+const readAiRecipeState = (): AiRecipeStoredState | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(AI_RECIPE_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<AiRecipeStoredState>;
+    if (!parsed || typeof parsed.ts !== "number") {
+      return null;
+    }
+
+    const selectedFridgeItemIds = Array.isArray(parsed.selectedFridgeItemIds)
+      ? parsed.selectedFridgeItemIds.filter(
+          (id): id is string => typeof id === "string",
+        )
+      : [];
+    const dietaryPreferences =
+      typeof parsed.dietaryPreferences === "string"
+        ? parsed.dietaryPreferences
+        : "";
+    const candidates = Array.isArray(parsed.candidates)
+      ? parsed.candidates.filter(isCandidate)
+      : [];
+
+    return {
+      ts: parsed.ts,
+      selectedFridgeItemIds,
+      dietaryPreferences,
+      candidates,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const writeAiRecipeState = (state: AiRecipeStoredState) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.sessionStorage.setItem(
+      AI_RECIPE_STORAGE_KEY,
+      JSON.stringify(state),
+    );
+  } catch {
+    return;
+  }
+};
+
+const clearAiRecipeState = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.sessionStorage.removeItem(AI_RECIPE_STORAGE_KEY);
+  } catch {
+    return;
+  }
+};
+
 export default function AiRecipePageClient() {
   const router = useRouter();
   const [fridgeItems, setFridgeItems] = useState<FridgeItemOption[]>([]);
   const [selectedFridgeItemIds, setSelectedFridgeItemIds] = useState<string[]>([]);
   const [dietaryPreferences, setDietaryPreferences] = useState("");
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
+  const [aiCandidates, setAiCandidates] = useState<AiRecipeCandidate[]>([]);
   const [isLoadingIngredients, setIsLoadingIngredients] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(true);
+  const [bookmarkError, setBookmarkError] = useState<string | null>(null);
+  const [savingBookmarkIds, setSavingBookmarkIds] = useState<Set<string>>(new Set());
+  const [isSavingCandidateIndex, setIsSavingCandidateIndex] = useState<number | null>(null);
 
   const loadFridgeItems = useCallback(async () => {
     try {
@@ -116,9 +260,63 @@ export default function AiRecipePageClient() {
     }
   }, [router]);
 
+  const loadBookmarks = useCallback(async () => {
+    try {
+      setIsLoadingBookmarks(true);
+      setBookmarkError(null);
+
+      const response = await fetch("/api/bookmarks", {
+        cache: "no-store",
+      });
+
+      if (response.status === 401) {
+        router.replace("/login");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch bookmarks (${response.status})`);
+      }
+
+      const data = (await response.json()) as BookmarkListResponse;
+      setBookmarkedIds(new Set(data.recipeIds));
+    } catch (error) {
+      setBookmarkError(error instanceof Error ? error.message : "Unexpected error.");
+    } finally {
+      setIsLoadingBookmarks(false);
+    }
+  }, [router]);
+
   useEffect(() => {
     void loadFridgeItems();
   }, [loadFridgeItems]);
+
+  useEffect(() => {
+    void loadBookmarks();
+  }, [loadBookmarks]);
+
+  useEffect(() => {
+    const stored = readAiRecipeState();
+    if (!stored) {
+      return;
+    }
+
+    if (Date.now() - stored.ts > AI_RECIPE_STATE_MAX_AGE_MS) {
+      clearAiRecipeState();
+      return;
+    }
+
+    if (stored.candidates.length === 0) {
+      clearAiRecipeState();
+      return;
+    }
+
+    setSelectedFridgeItemIds(stored.selectedFridgeItemIds);
+    setDietaryPreferences(stored.dietaryPreferences);
+    setAiCandidates(stored.candidates);
+    setRecommendations([]);
+    setHasGenerated(true);
+  }, []);
 
   const toggleIngredient = (itemId: string) => {
     setSelectedFridgeItemIds((previousSelected) =>
@@ -143,8 +341,12 @@ export default function AiRecipePageClient() {
       setIsGenerating(true);
       setErrorMessage(null);
       setHasGenerated(true);
+      setAiCandidates([]);
+      setRecommendations([]);
+      setIsSavingCandidateIndex(null);
+      clearAiRecipeState();
 
-      const response = await fetch("/api/recommendations", {
+      const aiResponse = await fetch("/api/ai/generate-recipes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -155,24 +357,181 @@ export default function AiRecipePageClient() {
         }),
       });
 
+      if (aiResponse.status === 401) {
+        router.replace("/login");
+        return;
+      }
+
+      if (aiResponse.ok) {
+        const result = (await aiResponse.json()) as AiRecipeCandidatesResponse;
+        setAiCandidates(result.candidates);
+        writeAiRecipeState({
+          ts: Date.now(),
+          selectedFridgeItemIds,
+          dietaryPreferences,
+          candidates: result.candidates,
+        });
+        return;
+      }
+
+      const aiResult = (await aiResponse.json().catch(() => ({}))) as {
+        message?: string;
+      };
+      throw new Error(aiResult.message ?? "AI recipe generation failed.");
+    } catch (error) {
+      console.error(error);
+
+      try {
+        const response = await fetch("/api/recommendations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            selectedFridgeItemIds,
+            dietaryPreferences,
+          }),
+        });
+
+        if (response.status === 401) {
+          router.replace("/login");
+          return;
+        }
+
+        const result = (await response.json()) as RecommendationsResponse & {
+          message?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(result.message ?? "Failed to generate recommendations.");
+        }
+
+        setRecommendations(result.recommendations);
+        setAiCandidates([]);
+        setErrorMessage("AI generation unavailable. Showing recommendations instead.");
+        clearAiRecipeState();
+      } catch (fallbackError) {
+        setErrorMessage(
+          fallbackError instanceof Error
+            ? fallbackError.message
+            : "Unexpected error.",
+        );
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const clearAiResults = () => {
+    setAiCandidates([]);
+    setIsSavingCandidateIndex(null);
+    setErrorMessage(null);
+    clearAiRecipeState();
+    if (recommendations.length === 0) {
+      setHasGenerated(false);
+    }
+  };
+
+  const handleChooseCandidate = async (
+    candidate: AiRecipeCandidate,
+    candidateIndex: number,
+  ) => {
+    if (isSavingCandidateIndex !== null) {
+      return;
+    }
+
+    setIsSavingCandidateIndex(candidateIndex);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/ai/save-recipe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ recipe: candidate }),
+      });
+
       if (response.status === 401) {
         router.replace("/login");
         return;
       }
 
-      const result = (await response.json()) as RecommendationsResponse & {
-        message?: string;
-      };
+      const result = (await response.json().catch(() => ({}))) as
+        | (AiSaveRecipeResponse & { message?: string })
+        | { message?: string };
 
       if (!response.ok) {
-        throw new Error(result.message ?? "Failed to generate recommendations.");
+        throw new Error(result.message ?? "Failed to save recipe.");
       }
 
-      setRecommendations(result.recommendations);
+      if (!("recipeId" in result) || !result.recipeId) {
+        throw new Error("Recipe saved but no ID returned.");
+      }
+
+      router.push(`/recipes/${result.recipeId}`);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unexpected error.");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to save recipe.",
+      );
     } finally {
-      setIsGenerating(false);
+      setIsSavingCandidateIndex(null);
+    }
+  };
+
+  const toggleBookmark = async (recipeId: string) => {
+    if (savingBookmarkIds.has(recipeId)) {
+      return;
+    }
+
+    const isBookmarked = bookmarkedIds.has(recipeId);
+
+    setSavingBookmarkIds((previous) => {
+      const next = new Set(previous);
+      next.add(recipeId);
+      return next;
+    });
+    setBookmarkError(null);
+
+    try {
+      const response = await fetch(
+        isBookmarked ? `/api/bookmarks/${recipeId}` : "/api/bookmarks",
+        {
+          method: isBookmarked ? "DELETE" : "POST",
+          headers: isBookmarked ? undefined : { "Content-Type": "application/json" },
+          body: isBookmarked ? undefined : JSON.stringify({ recipeId }),
+        },
+      );
+
+      if (response.status === 401) {
+        router.replace("/login");
+        return;
+      }
+
+      if (!response.ok) {
+        const result = (await response.json().catch(() => ({}))) as {
+          message?: string;
+        };
+        throw new Error(result.message ?? "Failed to update bookmark.");
+      }
+
+      setBookmarkedIds((previous) => {
+        const next = new Set(previous);
+        if (isBookmarked) {
+          next.delete(recipeId);
+        } else {
+          next.add(recipeId);
+        }
+        return next;
+      });
+    } catch (error) {
+      setBookmarkError(error instanceof Error ? error.message : "Unexpected error.");
+    } finally {
+      setSavingBookmarkIds((previous) => {
+        const next = new Set(previous);
+        next.delete(recipeId);
+        return next;
+      });
     }
   };
 
@@ -181,8 +540,45 @@ export default function AiRecipePageClient() {
     [recommendations],
   );
 
+  const hasAiCandidates = aiCandidates.length > 0;
+  const featuredCandidate = hasAiCandidates ? aiCandidates[0] : null;
+  const featuredMetrics = hasAiCandidates
+    ? {
+        name: featuredCandidate?.name ?? "",
+        description: featuredCandidate?.description ?? "",
+        calories: featuredCandidate?.nutrition.calories ?? 0,
+        protein: featuredCandidate?.nutrition.protein ?? 0,
+        carbs: featuredCandidate?.nutrition.carbs ?? 0,
+        fat: featuredCandidate?.nutrition.fat ?? 0,
+      }
+    : {
+        name: featuredRecipe.name,
+        description: featuredRecipe.explanation,
+        calories: featuredRecipe.calories ?? 0,
+        protein: featuredRecipe.protein ?? null,
+        carbs: featuredRecipe.carbs ?? null,
+        fat: featuredRecipe.fat ?? null,
+      };
+  const featuredImageUrl = hasAiCandidates
+    ? fallbackRecommendation.imageUrl ?? ""
+    : featuredRecipe.imageUrl ?? fallbackRecommendation.imageUrl ?? "";
+
   const hasRecommendations = recommendations.length > 0;
-  const showNoRecommendations = hasGenerated && !isGenerating && !errorMessage && !hasRecommendations;
+  const showNoRecommendations =
+    hasGenerated && !isGenerating && !errorMessage && !hasRecommendations && !hasAiCandidates;
+  const featuredIsBookmarked =
+    hasRecommendations && !hasAiCandidates && bookmarkedIds.has(featuredRecipe.id);
+  const featuredIsSaving =
+    hasRecommendations && !hasAiCandidates && savingBookmarkIds.has(featuredRecipe.id);
+  const featuredBookmarkDisabled =
+    !hasRecommendations || hasAiCandidates || isLoadingBookmarks || featuredIsSaving;
+  const featuredBadgeLabel = hasAiCandidates
+    ? `AI Option ${aiCandidates.length > 1 ? `1/${aiCandidates.length}` : "1"}`
+    : hasRecommendations
+      ? `${featuredRecipe.matchPercent}% Match`
+      : isGenerating
+        ? "Scoring..."
+        : "Ready";
 
   return (
     <div className="min-h-screen bg-surface font-body text-on-surface pb-32">
@@ -326,6 +722,24 @@ export default function AiRecipePageClient() {
               </div>
             ) : null}
 
+            {hasAiCandidates ? (
+              <div className="flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={clearAiResults}
+                  className="text-xs font-bold uppercase tracking-widest text-primary/80 transition-colors hover:text-primary"
+                >
+                  Clear results
+                </button>
+              </div>
+            ) : null}
+
+            {bookmarkError ? (
+              <div className="rounded-xl border border-error/20 bg-error-container/10 p-4">
+                <p className="text-sm font-semibold text-error">{bookmarkError}</p>
+              </div>
+            ) : null}
+
             <div className="glass-card relative flex-1 overflow-hidden rounded-3xl border-4 border-white shadow-xl">
               <div className="absolute left-4 top-4 z-10 flex items-center gap-1 rounded-full bg-secondary-container px-3 py-1 text-xs font-bold text-on-secondary-container">
                 <span
@@ -334,16 +748,37 @@ export default function AiRecipePageClient() {
                 >
                   bolt
                 </span>
-                {hasRecommendations
-                  ? `${featuredRecipe.matchPercent}% Match`
-                  : isGenerating
-                    ? "Scoring..."
-                    : "Ready"}
+                {featuredBadgeLabel}
               </div>
+              {!hasAiCandidates && hasRecommendations ? (
+                <button
+                  type="button"
+                  onClick={() => void toggleBookmark(featuredRecipe.id)}
+                  disabled={featuredBookmarkDisabled}
+                  aria-pressed={featuredIsBookmarked}
+                  aria-label={
+                    featuredIsBookmarked ? "Remove bookmark" : "Save recipe"
+                  }
+                  className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-on-surface shadow-lg transition-transform active:scale-90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span
+                    className={`material-symbols-outlined${
+                      featuredIsBookmarked ? " text-primary" : ""
+                    }`}
+                    style={{
+                      fontVariationSettings: featuredIsBookmarked
+                        ? '"FILL" 1'
+                        : '"FILL" 0',
+                    }}
+                  >
+                    favorite
+                  </span>
+                </button>
+              ) : null}
               <div className="h-48 w-full overflow-hidden">
                 <img
-                  src={featuredRecipe.imageUrl ?? fallbackRecommendation.imageUrl ?? ""}
-                  alt={featuredRecipe.name}
+                  src={featuredImageUrl}
+                  alt={featuredMetrics.name}
                   className="h-full w-full object-cover"
                 />
               </div>
@@ -357,15 +792,15 @@ export default function AiRecipePageClient() {
                       </span>
                     </div>
                     <h4 className="font-headline text-2xl font-extrabold text-on-surface">
-                      {featuredRecipe.name}
+                      {featuredMetrics.name}
                     </h4>
                     <p className="mt-1 line-clamp-2 text-xs text-on-surface-variant">
-                      {featuredRecipe.explanation}
+                      {featuredMetrics.description}
                     </p>
                   </div>
                   <div className="text-right">
                     <span className="block text-lg font-bold text-primary">
-                      {featuredRecipe.calories ?? 0}
+                      {Math.round(featuredMetrics.calories)}
                     </span>
                     <span className="block text-[10px] font-bold uppercase tracking-tighter text-on-surface-variant">
                       kcal
@@ -377,23 +812,39 @@ export default function AiRecipePageClient() {
                     <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                       Protein
                     </span>
-                    <span className="font-bold">{formatMacro(featuredRecipe.protein)}g</span>
+                    <span className="font-bold">{formatMacro(featuredMetrics.protein)}g</span>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                       Carbs
                     </span>
-                    <span className="font-bold">{formatMacro(featuredRecipe.carbs)}g</span>
+                    <span className="font-bold">{formatMacro(featuredMetrics.carbs)}g</span>
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
                       Fats
                     </span>
-                    <span className="font-bold">{formatMacro(featuredRecipe.fat)}g</span>
+                    <span className="font-bold">{formatMacro(featuredMetrics.fat)}g</span>
                   </div>
                 </div>
                 <div className="border-t border-outline-variant/10 pt-4">
-                  {hasRecommendations ? (
+                  {hasAiCandidates ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (featuredCandidate) {
+                          void handleChooseCandidate(featuredCandidate, 0);
+                        }
+                      }}
+                      disabled={isSavingCandidateIndex !== null}
+                      className="flex w-full items-center justify-center gap-2 text-sm font-bold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSavingCandidateIndex === 0 ? "Saving..." : "Choose Recipe"}
+                      <span className="material-symbols-outlined text-sm">
+                        arrow_forward
+                      </span>
+                    </button>
+                  ) : hasRecommendations ? (
                     <Link
                       href={`/recipes/${featuredRecipe.id}`}
                       className="flex w-full items-center justify-center gap-2 text-sm font-bold text-primary hover:underline"
@@ -414,27 +865,105 @@ export default function AiRecipePageClient() {
               </div>
             </div>
 
-            {recommendations.length > 1 ? (
+            {hasAiCandidates && aiCandidates.length > 1 ? (
               <div className="space-y-3">
-                {recommendations.slice(1).map((recipe) => (
-                  <Link
-                    key={recipe.id}
-                    href={`/recipes/${recipe.id}`}
-                    className="block rounded-2xl bg-surface-container-lowest p-4 editorial-shadow transition-transform active:scale-[0.99]"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-headline text-lg font-bold">{recipe.name}</p>
-                        <p className="mt-1 text-xs text-on-surface-variant">
-                          {recipe.explanation}
-                        </p>
+                {aiCandidates.slice(1).map((candidate, index) => {
+                  const candidateIndex = index + 1;
+                  const isSavingCandidate =
+                    isSavingCandidateIndex === candidateIndex;
+                  const isCandidateDisabled = isSavingCandidateIndex !== null;
+
+                  return (
+                    <div
+                      key={`${candidate.name}-${candidateIndex}`}
+                      className="rounded-2xl bg-surface-container-lowest p-4 editorial-shadow transition-transform active:scale-[0.99]"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-headline text-lg font-bold">
+                            {candidate.name}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-xs text-on-surface-variant">
+                            {candidate.description}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                            <span>{Math.round(candidate.nutrition.calories)} kcal</span>
+                            <span>P {formatMacro(candidate.nutrition.protein)}g</span>
+                            <span>C {formatMacro(candidate.nutrition.carbs)}g</span>
+                            <span>F {formatMacro(candidate.nutrition.fat)}g</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleChooseCandidate(candidate, candidateIndex)
+                          }
+                          disabled={isCandidateDisabled}
+                          className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-on-primary shadow-sm transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {isSavingCandidate ? "Saving..." : "Choose"}
+                        </button>
                       </div>
-                      <span className="rounded-full bg-secondary-container px-2 py-1 text-xs font-bold text-on-secondary-container">
-                        {recipe.matchPercent}%
-                      </span>
                     </div>
-                  </Link>
-                ))}
+                  );
+                })}
+              </div>
+            ) : recommendations.length > 1 ? (
+              <div className="space-y-3">
+                {recommendations.slice(1).map((recipe) => {
+                  const isBookmarked = bookmarkedIds.has(recipe.id);
+                  const isSaving = savingBookmarkIds.has(recipe.id);
+                  const isBookmarkDisabled = isLoadingBookmarks || isSaving;
+
+                  return (
+                    <Link
+                      key={recipe.id}
+                      href={`/recipes/${recipe.id}`}
+                      className="block rounded-2xl bg-surface-container-lowest p-4 editorial-shadow transition-transform active:scale-[0.99]"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-headline text-lg font-bold">{recipe.name}</p>
+                          <p className="mt-1 text-xs text-on-surface-variant">
+                            {recipe.explanation}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              void toggleBookmark(recipe.id);
+                            }}
+                            disabled={isBookmarkDisabled}
+                            aria-pressed={isBookmarked}
+                            aria-label={
+                              isBookmarked ? "Remove bookmark" : "Save recipe"
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-on-surface shadow-sm transition-transform active:scale-90 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <span
+                              className={`material-symbols-outlined text-sm${
+                                isBookmarked ? " text-primary" : ""
+                              }`}
+                              style={{
+                                fontVariationSettings: isBookmarked
+                                  ? '"FILL" 1'
+                                  : '"FILL" 0',
+                              }}
+                            >
+                              favorite
+                            </span>
+                          </button>
+                          <span className="rounded-full bg-secondary-container px-2 py-1 text-xs font-bold text-on-secondary-container">
+                            {recipe.matchPercent}%
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             ) : null}
           </div>

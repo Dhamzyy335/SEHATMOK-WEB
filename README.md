@@ -15,7 +15,11 @@ Required values:
 ```env
 DATABASE_URL="mysql://root:password@localhost:3306/sehatmok"
 JWT_SECRET="replace-with-a-long-random-secret"
+GEMINI_API_KEY="replace-with-your-gemini-api-key"
+GEMINI_MODEL="gemini-3-flash-preview"
 ```
+
+`GEMINI_MODEL` is optional and defaults to `gemini-3-flash-preview`.
 
 ## Install
 
@@ -49,6 +53,7 @@ npm run dev
 - `GET /api/recipes`
 - `GET /api/recipes/:id`
 - `POST /api/recommendations`
+- `POST /api/ai/generate-recipe`
 
 ## Recommendation API
 
@@ -105,5 +110,6 @@ npm run dev
 1. Login through `/login`.
 2. Ensure you have fridge items at `/fridge`.
 3. Open `/ai-recipe`, select ingredients, add optional preferences, then click **Generate Recipe**.
-4. Confirm recommendation cards appear with match percent, explanation, and links to `/recipes/[id]`.
-5. Call `POST /api/recommendations` manually from browser devtools or API client while logged in and verify sorted results by `finalScore`.
+4. Confirm you are redirected to `/recipes/[id]` and the new recipe is saved.
+5. If Gemini fails, confirm recommendation cards appear as fallback with match percent and links.
+6. Call `POST /api/recommendations` manually while logged in and verify sorted results by `finalScore`.

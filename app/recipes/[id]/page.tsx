@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
+import RecipeBookmarkButton from "@/components/RecipeBookmarkButton";
 import { requirePageUserId } from "@/lib/page-auth";
 import { prisma } from "@/lib/prisma";
 
@@ -100,12 +101,7 @@ export default async function RecipeDetailsPage({
           <span className="material-symbols-outlined">arrow_back</span>
         </Link>
         <div className="flex gap-3">
-          <button
-            type="button"
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-on-surface shadow-lg transition-transform active:scale-90"
-          >
-            <span className="material-symbols-outlined">favorite</span>
-          </button>
+          <RecipeBookmarkButton recipeId={id} />
           <button
             type="button"
             className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-on-surface shadow-lg transition-transform active:scale-90"
