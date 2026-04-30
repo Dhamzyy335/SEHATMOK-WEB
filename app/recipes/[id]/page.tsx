@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
+import RecipeBackButton from "@/components/RecipeBackButton";
 import RecipeBookmarkButton from "@/components/RecipeBookmarkButton";
 import { requirePageUserId } from "@/lib/page-auth";
 import { prisma } from "@/lib/prisma";
@@ -44,11 +44,18 @@ const formatIngredientAmount = (quantity: number, unit: string) => {
 
 export default async function RecipeDetailsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string | string[] }>;
 }) {
-  await requirePageUserId();
+  const userId = await requirePageUserId();
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const fromParam = Array.isArray(resolvedSearchParams.from)
+    ? resolvedSearchParams.from[0]
+    : resolvedSearchParams.from;
+  const fallbackHref = fromParam === "bookmarks" ? "/bookmarks" : "/ai-recipe";
 
   const recipe = await prisma.recipe.findUnique({
     where: { id },
@@ -63,6 +70,43 @@ export default async function RecipeDetailsPage({
 
   if (!recipe) {
     notFound();
+  }
+
+  try {
+    const now = new Date();
+    const recentHistory = await prisma.history.findFirst({
+      where: { userId, recipeId: recipe.id },
+      orderBy: { viewedAt: "desc" },
+      select: { id: true, viewedAt: true },
+    });
+
+    if (recentHistory) {
+      const elapsedMs = now.getTime() - recentHistory.viewedAt.getTime();
+      if (elapsedMs < 5 * 60 * 1000) {
+        await prisma.history.update({
+          where: { id: recentHistory.id },
+          data: { viewedAt: now },
+        });
+      } else {
+        await prisma.history.create({
+          data: {
+            userId,
+            recipeId: recipe.id,
+            viewedAt: now,
+          },
+        });
+      }
+    } else {
+      await prisma.history.create({
+        data: {
+          userId,
+          recipeId: recipe.id,
+          viewedAt: now,
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Failed to record recipe history:", error);
   }
 
   const ingredientRows: RecipeIngredient[] = recipe.recipeIngredients.map((relation) => ({
@@ -94,12 +138,7 @@ export default async function RecipeDetailsPage({
   return (
     <div className="min-h-screen bg-surface font-body leading-relaxed text-on-surface pb-32">
       <header className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between px-6 py-6 transition-all duration-300">
-        <Link
-          href="/ai-recipe"
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-on-surface shadow-lg transition-transform active:scale-90"
-        >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </Link>
+        <RecipeBackButton fallbackHref={fallbackHref} />
         <div className="flex gap-3">
           <RecipeBookmarkButton recipeId={id} />
           <button

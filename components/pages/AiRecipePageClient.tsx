@@ -469,7 +469,7 @@ export default function AiRecipePageClient() {
         throw new Error("Recipe saved but no ID returned.");
       }
 
-      router.push(`/recipes/${result.recipeId}`);
+      router.push(`/recipes/${result.recipeId}?from=ai-recipe`);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Failed to save recipe.",
@@ -716,6 +716,15 @@ export default function AiRecipePageClient() {
               <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
             </button>
 
+            <div className="-mt-4 flex justify-end">
+              <Link
+                href="/recipes"
+                className="text-xs font-bold uppercase tracking-widest text-primary/80 transition-colors hover:text-primary"
+              >
+                Browse all recipes
+              </Link>
+            </div>
+
             {errorMessage ? (
               <div className="rounded-xl border border-error/20 bg-error-container/10 p-4">
                 <p className="text-sm font-semibold text-error">{errorMessage}</p>
@@ -846,7 +855,7 @@ export default function AiRecipePageClient() {
                     </button>
                   ) : hasRecommendations ? (
                     <Link
-                      href={`/recipes/${featuredRecipe.id}`}
+                      href={`/recipes/${featuredRecipe.id}?from=ai-recipe`}
                       className="flex w-full items-center justify-center gap-2 text-sm font-bold text-primary hover:underline"
                     >
                       View Full Recipe
@@ -918,7 +927,7 @@ export default function AiRecipePageClient() {
                   return (
                     <Link
                       key={recipe.id}
-                      href={`/recipes/${recipe.id}`}
+                      href={`/recipes/${recipe.id}?from=ai-recipe`}
                       className="block rounded-2xl bg-surface-container-lowest p-4 editorial-shadow transition-transform active:scale-[0.99]"
                     >
                       <div className="flex items-start justify-between gap-3">

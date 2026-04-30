@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 
@@ -281,6 +282,57 @@ export default function ProfilePageClient() {
             <p className="text-sm font-semibold text-primary">{saveMessage}</p>
           </div>
         ) : null}
+
+        <section className="rounded-2xl bg-surface-container-lowest p-6 editorial-shadow">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="font-headline text-xl font-bold">My Bookmarks</h3>
+              <p className="text-sm text-on-surface-variant">
+                View your saved recipes in one place.
+              </p>
+            </div>
+            <Link
+              href="/bookmarks"
+              className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-on-primary shadow-sm transition-transform active:scale-95"
+            >
+              View
+            </Link>
+          </div>
+        </section>
+
+        <section className="rounded-2xl bg-surface-container-lowest p-6 editorial-shadow">
+          <Link href="/recipes" className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary">menu_book</span>
+              <div>
+                <h3 className="font-headline text-xl font-bold">Recipes</h3>
+                <p className="text-sm text-on-surface-variant">
+                  Browse and search every recipe.
+                </p>
+              </div>
+            </div>
+            <span className="material-symbols-outlined text-primary">arrow_forward</span>
+          </Link>
+        </section>
+
+        <section className="rounded-2xl bg-surface-container-lowest p-6 editorial-shadow">
+          <Link
+            href="/history"
+            aria-label="Open History"
+            className="flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary">history</span>
+              <div>
+                <h3 className="font-headline text-xl font-bold">History</h3>
+                <p className="text-sm text-on-surface-variant">
+                  Recently viewed recipes.
+                </p>
+              </div>
+            </div>
+            <span className="material-symbols-outlined text-primary">arrow_forward</span>
+          </Link>
+        </section>
 
         <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-surface-container-lowest p-6 editorial-shadow">
           <div className="flex items-center justify-between">

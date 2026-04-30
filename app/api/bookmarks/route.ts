@@ -3,6 +3,28 @@ import { z } from "zod";
 import { UnauthorizedError, requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+type RecipeRecord = {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
+  description: string | null;
+};
+
+type RecipeSummary = {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
+  description?: string;
+};
+
 const bookmarkPayloadSchema = z.object({
   recipeId: z.string().trim().min(1),
 });
@@ -17,8 +39,41 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
+    const recipeIds = bookmarks.map((bookmark) => bookmark.recipeId);
+    const recipes: RecipeRecord[] = recipeIds.length
+      ? await prisma.recipe.findMany({
+          where: { id: { in: recipeIds } },
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+            calories: true,
+            protein: true,
+            carbs: true,
+            fat: true,
+            description: true,
+          },
+        })
+      : [];
+
+    const recipeMap = new Map(recipes.map((recipe) => [recipe.id, recipe]));
+    const orderedRecipes: RecipeSummary[] = recipeIds
+      .map((id) => recipeMap.get(id))
+      .filter((recipe): recipe is RecipeRecord => Boolean(recipe))
+      .map((recipe) => ({
+        id: recipe.id,
+        name: recipe.name,
+        imageUrl: recipe.imageUrl,
+        calories: recipe.calories,
+        protein: recipe.protein,
+        carbs: recipe.carbs,
+        fat: recipe.fat,
+        description: recipe.description ?? undefined,
+      }));
+
     return NextResponse.json({
-      recipeIds: bookmarks.map((bookmark) => bookmark.recipeId),
+      recipeIds,
+      recipes: orderedRecipes,
     });
   } catch (error) {
     if (error instanceof UnauthorizedError) {

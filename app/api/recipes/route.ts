@@ -1,44 +1,167 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const toStepArray = (value: unknown): string[] => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter((entry): entry is string => typeof entry === "string");
+type RecipeSummary = {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
 };
 
-export async function GET() {
+const categoryKeywordMap: Record<string, string[]> = {
+  vegetables: [
+    "carrot",
+    "spinach",
+    "broccoli",
+    "kale",
+    "lettuce",
+    "pepper",
+    "tomato",
+    "cucumber",
+    "onion",
+    "garlic",
+    "zucchini",
+    "mushroom",
+  ],
+  fruits: [
+    "apple",
+    "banana",
+    "avocado",
+    "berry",
+    "strawberry",
+    "blueberry",
+    "orange",
+    "lemon",
+    "lime",
+    "mango",
+    "pineapple",
+    "grape",
+    "peach",
+    "pear",
+  ],
+  proteins: [
+    "chicken",
+    "beef",
+    "pork",
+    "fish",
+    "salmon",
+    "tuna",
+    "egg",
+    "tofu",
+    "tempeh",
+    "turkey",
+    "shrimp",
+    "lentil",
+    "bean",
+    "chickpea",
+  ],
+  dairy: ["milk", "cheese", "yogurt", "butter", "cream", "parmesan", "mozzarella"],
+  grains: [
+    "rice",
+    "pasta",
+    "bread",
+    "oat",
+    "quinoa",
+    "barley",
+    "noodle",
+    "couscous",
+    "tortilla",
+  ],
+  nuts: [
+    "almond",
+    "walnut",
+    "cashew",
+    "peanut",
+    "pistachio",
+    "hazelnut",
+    "pecan",
+  ],
+};
+
+const normalizeCategory = (value: string | null): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized === "all") {
+    return null;
+  }
+
+  return normalized;
+};
+
+const matchesCategory = (ingredientNames: string[], keywords: string[]): boolean => {
+  if (keywords.length === 0) {
+    return true;
+  }
+
+  const normalizedIngredients = ingredientNames.map((name) => name.toLowerCase());
+  return normalizedIngredients.some((name) =>
+    keywords.some((keyword) => name.includes(keyword)),
+  );
+};
+
+export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const query = url.searchParams.get("q")?.trim() ?? "";
+    const category = normalizeCategory(url.searchParams.get("category"));
+    const categoryKeywords = category ? categoryKeywordMap[category] : undefined;
+
     const recipes = await prisma.recipe.findMany({
-      include: {
+      where: query
+        ? {
+            name: {
+              contains: query,
+              mode: "insensitive",
+            },
+          }
+        : undefined,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        imageUrl: true,
+        calories: true,
+        protein: true,
+        carbs: true,
+        fat: true,
         recipeIngredients: {
-          include: {
-            ingredient: true,
+          select: {
+            ingredient: {
+              select: {
+                name: true,
+              },
+            },
           },
         },
       },
       orderBy: [{ name: "asc" }],
     });
 
-    const response = recipes.map((recipe) => ({
+    const filteredRecipes = categoryKeywords
+      ? recipes.filter((recipe) =>
+          matchesCategory(
+            recipe.recipeIngredients.map((relation) => relation.ingredient.name),
+            categoryKeywords,
+          ),
+        )
+      : recipes;
+
+    const response: RecipeSummary[] = filteredRecipes.map((recipe) => ({
       id: recipe.id,
       name: recipe.name,
       description: recipe.description,
-      steps: toStepArray(recipe.steps),
-      imageUrl: recipe.imageUrl,
+      imageUrl: recipe.imageUrl ?? "",
       calories: recipe.calories,
       protein: recipe.protein,
       carbs: recipe.carbs,
       fat: recipe.fat,
-      fiber: recipe.fiber,
-      ingredients: recipe.recipeIngredients.map((relation) => ({
-        id: relation.ingredient.id,
-        name: relation.ingredient.name,
-        quantity: relation.quantity,
-        unit: relation.unit,
-      })),
     }));
 
     return NextResponse.json(response);
