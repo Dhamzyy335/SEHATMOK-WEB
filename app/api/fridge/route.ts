@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { UnauthorizedError, requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -11,13 +11,31 @@ const fridgeItemCreateSchema = z.object({
   expiryDate: z.union([z.string().datetime(), z.null()]).optional(),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const userId = await requireUserId();
+    const status = request.nextUrl.searchParams.get("status")?.trim().toLowerCase();
+    const isNearExpiry = status === "near-expiry";
+
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 3);
 
     const items = await prisma.fridgeItem.findMany({
-      where: { userId },
-      orderBy: [{ createdAt: "desc" }],
+      where: isNearExpiry
+        ? {
+            userId,
+            expiryDate: {
+              not: null,
+              lt: end,
+            },
+          }
+        : { userId },
+      orderBy: isNearExpiry
+        ? [{ expiryDate: "asc" }, { createdAt: "desc" }]
+        : [{ createdAt: "desc" }],
     });
 
     return NextResponse.json(items);

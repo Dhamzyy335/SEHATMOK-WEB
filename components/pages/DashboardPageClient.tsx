@@ -24,7 +24,6 @@ type MacroCard = {
   icon: string;
   iconColorClass: string;
   barColorClass: string;
-  progressWidthClass: string;
 };
 
 type FridgeHighlight = {
@@ -39,7 +38,29 @@ type DashboardSummary = {
   totalIntakeToday: number;
   totalOuttakeToday: number;
   remainingCalories: number;
+  macroTargets: MacroSummary;
+  macroCurrent: MacroSummary;
+  caloriesCurrent?: number;
 };
+
+type MacroSummary = {
+  proteinG: number;
+  carbsG: number;
+  fatsG: number;
+};
+
+type MealSlotValue = "BREAKFAST" | "LUNCH" | "DINNER";
+
+type MealPlanRecipe = {
+  id: string;
+  name: string;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
+};
+
+type MealPlanSlots = Record<MealSlotValue, MealPlanRecipe | null>;
 
 type LogTypeValue = "INTAKE" | "OUTTAKE";
 
@@ -61,12 +82,13 @@ const quickActions: QuickAction[] = [
       "bg-surface-container-lowest p-6 rounded-xl editorial-shadow flex flex-col justify-between hover:bg-surface-container-low transition-colors cursor-pointer group",
   },
   {
-    title: "Scan Label",
-    subtitle: "Instant nutrition",
-    icon: "camera_alt",
-    iconClassName: "text-primary",
+    title: "Meal Planner",
+    subtitle: "Plan your meals",
+    icon: "calendar_month",
+    iconClassName: "text-secondary",
     cardClassName:
       "bg-surface-container-lowest p-6 rounded-xl editorial-shadow flex flex-col justify-between hover:bg-surface-container-low transition-colors cursor-pointer group",
+    href: "/meal-plans",
   },
   {
     title: "AI Ideas",
@@ -81,35 +103,11 @@ const quickActions: QuickAction[] = [
   },
 ];
 
-const macroCards: MacroCard[] = [
-  {
-    name: "Protein",
-    current: 92,
-    target: 150,
-    icon: "fitness_center",
-    iconColorClass: "text-primary",
-    barColorClass: "bg-primary",
-    progressWidthClass: "w-[61%]",
-  },
-  {
-    name: "Carbohydrates",
-    current: 145,
-    target: 220,
-    icon: "grain",
-    iconColorClass: "text-secondary",
-    barColorClass: "bg-secondary",
-    progressWidthClass: "w-[66%]",
-  },
-  {
-    name: "Healthy Fats",
-    current: 48,
-    target: 65,
-    icon: "opacity",
-    iconColorClass: "text-tertiary",
-    barColorClass: "bg-tertiary",
-    progressWidthClass: "w-[73%]",
-  },
-];
+const emptyMacroSummary: MacroSummary = {
+  proteinG: 0,
+  carbsG: 0,
+  fatsG: 0,
+};
 
 const fridgeHighlights: FridgeHighlight[] = [
   {
@@ -126,6 +124,12 @@ const fridgeHighlights: FridgeHighlight[] = [
   },
 ];
 
+const mealSlotOrder: Array<{ key: MealSlotValue; label: string }> = [
+  { key: "BREAKFAST", label: "Breakfast" },
+  { key: "LUNCH", label: "Lunch" },
+  { key: "DINNER", label: "Dinner" },
+];
+
 const circumference = 552.92;
 
 const fallbackSummary: DashboardSummary = {
@@ -133,6 +137,116 @@ const fallbackSummary: DashboardSummary = {
   totalIntakeToday: 750,
   totalOuttakeToday: 0,
   remainingCalories: 1250,
+  macroTargets: emptyMacroSummary,
+  macroCurrent: emptyMacroSummary,
+};
+
+const emptyMealPlanSlots: MealPlanSlots = {
+  BREAKFAST: null,
+  LUNCH: null,
+  DINNER: null,
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getLocalDateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatCalories = (value: number | null): string => {
+  if (value === null || !Number.isFinite(value)) {
+    return "--";
+  }
+
+  return Math.round(value).toString();
+};
+
+const formatMacroValue = (value: number): string => {
+  if (!Number.isFinite(value)) {
+    return "--";
+  }
+
+  return Math.round(value).toString();
+};
+
+const getMacroProgress = (current: number, target: number) => {
+  if (!Number.isFinite(current) || !Number.isFinite(target) || target <= 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(1, current / target));
+};
+
+const readRecipeFromValue = (value: unknown): MealPlanRecipe | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const candidate = "recipe" in value ? value.recipe : value;
+  if (!isRecord(candidate)) {
+    return null;
+  }
+
+  const id = typeof candidate.id === "string" ? candidate.id : null;
+  const name = typeof candidate.name === "string" ? candidate.name : null;
+
+  if (!id || !name) {
+    return null;
+  }
+
+  return {
+    id,
+    name,
+    calories: typeof candidate.calories === "number" ? candidate.calories : null,
+    protein: typeof candidate.protein === "number" ? candidate.protein : null,
+    carbs: typeof candidate.carbs === "number" ? candidate.carbs : null,
+    fat: typeof candidate.fat === "number" ? candidate.fat : null,
+  };
+};
+
+const normalizeMealPlanSlots = (data: unknown): MealPlanSlots => {
+  const slots: MealPlanSlots = { ...emptyMealPlanSlots };
+
+  if (!isRecord(data)) {
+    return slots;
+  }
+
+  const rawSlots = data.slots;
+  if (isRecord(rawSlots)) {
+    mealSlotOrder.forEach(({ key }) => {
+      if (key in rawSlots) {
+        slots[key] = readRecipeFromValue(rawSlots[key]);
+      }
+    });
+  }
+
+  const rawItems = data.items;
+  if (Array.isArray(rawItems)) {
+    rawItems.forEach((item) => {
+      if (!isRecord(item)) {
+        return;
+      }
+
+      const slotValue = typeof item.slot === "string" ? item.slot.toUpperCase() : "";
+      if (slotValue !== "BREAKFAST" && slotValue !== "LUNCH" && slotValue !== "DINNER") {
+        return;
+      }
+
+      const slotKey = slotValue as MealSlotValue;
+      if (slots[slotKey]) {
+        return;
+      }
+
+      slots[slotKey] = readRecipeFromValue(item);
+    });
+  }
+
+  return slots;
 };
 
 export default function DashboardPageClient() {
@@ -144,6 +258,9 @@ export default function DashboardPageClient() {
   const [logCalories, setLogCalories] = useState("");
   const [isSubmittingLog, setIsSubmittingLog] = useState(false);
   const [logErrorMessage, setLogErrorMessage] = useState<string | null>(null);
+  const [mealPlanSlots, setMealPlanSlots] = useState<MealPlanSlots>(emptyMealPlanSlots);
+  const [isMealPlanLoading, setIsMealPlanLoading] = useState(true);
+  const [mealPlanErrorMessage, setMealPlanErrorMessage] = useState<string | null>(null);
 
   const fetchSummary = useCallback(async () => {
     try {
@@ -172,9 +289,70 @@ export default function DashboardPageClient() {
     }
   }, [router]);
 
+  const fetchMealPlan = useCallback(async () => {
+    try {
+      setIsMealPlanLoading(true);
+      setMealPlanErrorMessage(null);
+
+      const today = getLocalDateString();
+      const response = await fetch(`/api/meal-plans?date=${today}`, {
+        cache: "no-store",
+      });
+
+      if (response.status === 401) {
+        router.replace("/login");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch meal plan (${response.status})`);
+      }
+
+      const data = (await response.json()) as unknown;
+      setMealPlanSlots(normalizeMealPlanSlots(data));
+    } catch {
+      setMealPlanErrorMessage("Could not load meal plan");
+    } finally {
+      setIsMealPlanLoading(false);
+    }
+  }, [router]);
+
   useEffect(() => {
     void fetchSummary();
-  }, [fetchSummary]);
+    void fetchMealPlan();
+  }, [fetchSummary, fetchMealPlan]);
+
+  const macroCards = useMemo<MacroCard[]>(() => {
+    const macroCurrent = summary.macroCurrent ?? emptyMacroSummary;
+    const macroTargets = summary.macroTargets ?? emptyMacroSummary;
+
+    return [
+      {
+        name: "Protein",
+        current: macroCurrent.proteinG,
+        target: macroTargets.proteinG,
+        icon: "fitness_center",
+        iconColorClass: "text-primary",
+        barColorClass: "bg-primary",
+      },
+      {
+        name: "Carbohydrates",
+        current: macroCurrent.carbsG,
+        target: macroTargets.carbsG,
+        icon: "grain",
+        iconColorClass: "text-secondary",
+        barColorClass: "bg-secondary",
+      },
+      {
+        name: "Healthy Fats",
+        current: macroCurrent.fatsG,
+        target: macroTargets.fatsG,
+        icon: "opacity",
+        iconColorClass: "text-tertiary",
+        barColorClass: "bg-tertiary",
+      },
+    ];
+  }, [summary]);
 
   const openLogModal = (type: LogTypeValue) => {
     setActiveLogType(type);
@@ -379,37 +557,100 @@ export default function DashboardPageClient() {
 
         <section className="space-y-6">
           <div className="flex items-baseline justify-between">
+            <h2 className="font-headline text-2xl font-bold">Today's Meal Plan</h2>
+            <Link
+              href="/meal-plans"
+              className="text-sm font-bold uppercase tracking-widest text-primary"
+            >
+              View Planner
+            </Link>
+          </div>
+
+          {mealPlanErrorMessage ? (
+            <div className="rounded-xl border border-error/20 bg-error-container/10 p-4">
+              <p className="text-sm font-semibold text-error">{mealPlanErrorMessage}</p>
+            </div>
+          ) : null}
+
+          {isMealPlanLoading ? (
+            <div className="rounded-xl bg-surface-container-lowest p-4 text-sm font-semibold text-on-surface-variant">
+              Loading today's plan...
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {mealSlotOrder.map((slot) => {
+              const recipe = mealPlanSlots[slot.key];
+
+              return (
+                <div key={slot.key} className="rounded-xl bg-surface-container-low p-6">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant">
+                    {slot.label}
+                  </p>
+                  {recipe ? (
+                    <div className="mt-3 space-y-3">
+                      <div>
+                        <h3 className="font-headline text-lg font-bold">{recipe.name}</h3>
+                        <p className="text-sm text-on-surface-variant">
+                          {formatCalories(recipe.calories)} kcal
+                        </p>
+                      </div>
+                      <Link href={`/recipes/${recipe.id}`} className="text-sm font-bold text-primary">
+                        View
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-sm text-on-surface-variant">Not planned yet</p>
+                      <Link href="/meal-plans" className="text-sm font-bold text-primary">
+                        Plan
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="space-y-6">
+          <div className="flex items-baseline justify-between">
             <h2 className="font-headline text-2xl font-bold">Daily Breakdown</h2>
-            <span className="text-sm font-bold uppercase tracking-widest text-primary">
-              View Trends
-            </span>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {macroCards.map((macro) => (
-              <div key={macro.name} className="space-y-4 rounded-xl bg-surface-container-low p-6">
-                <div className="flex items-end justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant">
-                      {macro.name}
-                    </p>
-                    <h4 className="font-headline text-2xl font-bold">
-                      {macro.current}
-                      <span className="ml-1 text-sm font-normal text-on-surface-variant">
-                        / {macro.target}g
-                      </span>
-                    </h4>
+            {macroCards.map((macro) => {
+              const progress = isLoading ? 0 : getMacroProgress(macro.current, macro.target);
+              const progressPercent = Math.round(progress * 100);
+              const currentLabel = isLoading ? "--" : formatMacroValue(macro.current);
+              const targetLabel = isLoading ? "--" : formatMacroValue(macro.target);
+
+              return (
+                <div key={macro.name} className="space-y-4 rounded-xl bg-surface-container-low p-6">
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant">
+                        {macro.name}
+                      </p>
+                      <h4 className="font-headline text-2xl font-bold">
+                        {currentLabel}
+                        <span className="ml-1 text-sm font-normal text-on-surface-variant">
+                          / {targetLabel}g
+                        </span>
+                      </h4>
+                    </div>
+                    <span className={`material-symbols-outlined ${macro.iconColorClass}`}>
+                      {macro.icon}
+                    </span>
                   </div>
-                  <span className={`material-symbols-outlined ${macro.iconColorClass}`}>
-                    {macro.icon}
-                  </span>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-highest">
+                    <div
+                      className={`h-full rounded-full ${macro.barColorClass}`}
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-highest">
-                  <div
-                    className={`h-full rounded-full ${macro.barColorClass} ${macro.progressWidthClass}`}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

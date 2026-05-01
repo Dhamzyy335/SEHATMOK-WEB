@@ -109,17 +109,26 @@ const matchesCategory = (ingredientNames: string[], keywords: string[]): boolean
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const query = url.searchParams.get("q")?.trim() ?? "";
+    const query = url.searchParams.get("q")?.trim();
+    const searchQuery = query ? query : null;
     const category = normalizeCategory(url.searchParams.get("category"));
     const categoryKeywords = category ? categoryKeywordMap[category] : undefined;
 
     const recipes = await prisma.recipe.findMany({
-      where: query
+      where: searchQuery
         ? {
-            name: {
-              contains: query,
-              mode: "insensitive",
-            },
+            OR: [
+              {
+                name: {
+                  contains: searchQuery,
+                },
+              },
+              {
+                description: {
+                  contains: searchQuery,
+                },
+              },
+            ],
           }
         : undefined,
       select: {

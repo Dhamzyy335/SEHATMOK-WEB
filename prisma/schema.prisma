@@ -20,6 +20,12 @@ enum LogType {
   OUTTAKE
 }
 
+enum MealSlot {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
@@ -144,11 +150,12 @@ model MealPlan {
   id       String   @id @default(cuid())
   userId   String
   date     DateTime
+  slot     MealSlot @default(LUNCH)
   recipeId String
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, date, recipeId])
+  @@unique([userId, date, slot])
   @@index([userId, date])
   @@index([recipeId])
 }

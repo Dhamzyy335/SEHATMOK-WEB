@@ -45,3 +45,29 @@ export const calculateNutritionTargets = (profile: {
     tdee,
   };
 };
+
+export type MacroTargets = {
+  proteinG: number;
+  carbsG: number;
+  fatsG: number;
+};
+
+const baseMacroTargets: MacroTargets = {
+  proteinG: 150,
+  carbsG: 220,
+  fatsG: 65,
+};
+
+export const DEFAULT_TARGET_CALORIES = 2000;
+
+export const calculateMacroTargets = (targetCalories: number | null): MacroTargets => {
+  const calories =
+    targetCalories && targetCalories > 0 ? targetCalories : DEFAULT_TARGET_CALORIES;
+  const scale = calories / DEFAULT_TARGET_CALORIES;
+
+  return {
+    proteinG: Math.round(baseMacroTargets.proteinG * scale),
+    carbsG: Math.round(baseMacroTargets.carbsG * scale),
+    fatsG: Math.round(baseMacroTargets.fatsG * scale),
+  };
+};

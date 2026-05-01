@@ -1,7 +1,11 @@
+import Link from "next/link";
+
 type TopAppBarProps = {
   title?: string;
   avatarUrl?: string;
   fixed?: boolean;
+  backHref?: string;
+  backLabel?: string;
 };
 
 const defaultAvatar =
@@ -11,6 +15,8 @@ export default function TopAppBar({
   title = "Good morning",
   avatarUrl = defaultAvatar,
   fixed = false,
+  backHref,
+  backLabel = "Back",
 }: TopAppBarProps) {
   return (
     <header
@@ -18,6 +24,15 @@ export default function TopAppBar({
     >
       <div className="mx-auto flex w-full max-w-screen-xl items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
+          {backHref ? (
+            <Link
+              href={backHref}
+              aria-label={backLabel}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-on-surface shadow-lg transition-transform hover:bg-white active:scale-90"
+            >
+              <span className="material-symbols-outlined">arrow_back</span>
+            </Link>
+          ) : null}
           <div className="h-10 w-10 overflow-hidden rounded-full bg-surface-container-highest">
             <img src={avatarUrl} alt="User Profile" className="h-full w-full object-cover" />
           </div>
