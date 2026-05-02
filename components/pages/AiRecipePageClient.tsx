@@ -63,6 +63,7 @@ type AiRecipeCandidatesResponse = {
 
 type AiSaveRecipeResponse = {
   recipeId: string;
+  reused: boolean;
 };
 
 type BookmarkListResponse = {
@@ -961,7 +962,7 @@ export default function AiRecipePageClient() {
                       disabled={isSavingCandidateIndex !== null}
                       className="flex w-full items-center justify-center gap-2 text-sm font-bold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {isSavingCandidateIndex === 0 ? "Saving..." : "Choose Recipe"}
+                      {isSavingCandidateIndex === 0 ? "Opening..." : "View Full Recipe"}
                       <span className="material-symbols-outlined text-sm">
                         arrow_forward
                       </span>
@@ -1042,7 +1043,7 @@ export default function AiRecipePageClient() {
                           disabled={isCandidateDisabled}
                           className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-on-primary shadow-sm transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
                         >
-                          {isSavingCandidate ? "Saving..." : "Choose"}
+                          {isSavingCandidate ? "Opening..." : "View"}
                         </button>
                       </div>
                     </div>
