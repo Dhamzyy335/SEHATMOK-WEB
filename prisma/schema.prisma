@@ -26,6 +26,11 @@ enum MealSlot {
   DINNER
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
@@ -37,28 +42,46 @@ model User {
   targetCalories Int?
   createdAt      DateTime       @default(now())
   fridgeItems    FridgeItem[]
+  groceryItems   GroceryItem[]
   logs           UserLog[]
   bookmarks      Bookmark[]
   histories      History[]
   mealPlans      MealPlan[]
 
+  role Role @default(USER)
+
   @@index([createdAt])
 }
 
 model FridgeItem {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String
   name       String
   category   String
   quantity   Float
   unit       String
   expiryDate DateTime?
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([category])
   @@index([expiryDate])
+}
+
+model GroceryItem {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  quantity  Float?
+  unit      String?
+  isDone    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isDone])
 }
 
 model Recipe {

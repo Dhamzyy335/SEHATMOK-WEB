@@ -56,6 +56,7 @@ export async function GET() {
       outtakeAggregate,
       mealPlans,
       nearExpiryFridgeItems,
+      activeGroceryCount,
     ] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
@@ -116,6 +117,12 @@ export async function GET() {
           quantity: true,
           unit: true,
           expiryDate: true,
+        },
+      }),
+      prisma.groceryItem.count({
+        where: {
+          userId,
+          isDone: false,
         },
       }),
     ]);
@@ -188,6 +195,7 @@ export async function GET() {
       macroCurrent,
       caloriesCurrent,
       nearExpiryItems,
+      activeGroceryCount,
     });
   } catch (error) {
     if (error instanceof UnauthorizedError) {

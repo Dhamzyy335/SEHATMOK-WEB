@@ -33,6 +33,7 @@ type FridgeHighlight = {
   iconColorClass: string;
   href?: string;
   ariaLabel?: string;
+  countKey?: "activeGroceryCount";
 };
 
 type DashboardSummary = {
@@ -44,6 +45,7 @@ type DashboardSummary = {
   macroCurrent: MacroSummary;
   caloriesCurrent?: number;
   nearExpiryItems: NearExpiryItem[];
+  activeGroceryCount: number;
 };
 
 type MacroSummary = {
@@ -136,6 +138,9 @@ const fridgeHighlights: FridgeHighlight[] = [
     subtitle: "4 essential items",
     icon: "shopping_cart",
     iconColorClass: "text-tertiary",
+    href: "/grocery",
+    ariaLabel: "Open grocery list",
+    countKey: "activeGroceryCount",
   },
 ];
 
@@ -155,6 +160,7 @@ const fallbackSummary: DashboardSummary = {
   macroTargets: emptyMacroSummary,
   macroCurrent: emptyMacroSummary,
   nearExpiryItems: [],
+  activeGroceryCount: 0,
 };
 
 const emptyMealPlanSlots: MealPlanSlots = {
@@ -724,6 +730,13 @@ export default function DashboardPageClient() {
             </div>
 
             {fridgeHighlights.map((highlight) => {
+              const subtitle =
+                highlight.countKey === "activeGroceryCount"
+                  ? `${summary.activeGroceryCount} active item${
+                      summary.activeGroceryCount === 1 ? "" : "s"
+                    }`
+                  : highlight.subtitle;
+
               const content = (
                 <>
                   <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-container-low">
@@ -732,7 +745,7 @@ export default function DashboardPageClient() {
                     </span>
                   </div>
                   <h3 className="font-headline font-bold">{highlight.title}</h3>
-                  <p className="text-sm text-on-surface-variant">{highlight.subtitle}</p>
+                  <p className="text-sm text-on-surface-variant">{subtitle}</p>
                 </>
               );
 
