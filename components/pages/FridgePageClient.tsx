@@ -183,6 +183,8 @@ export default function FridgePageClient() {
   const [editingItem, setEditingItem] = useState<FridgeItemRecord | null>(null);
   const [isSubmittingModal, setIsSubmittingModal] = useState(false);
   const [modalErrorMessage, setModalErrorMessage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   const fetchFridgeItems = useCallback(async () => {
     try {
@@ -226,6 +228,39 @@ export default function FridgePageClient() {
         : undefined,
     [editingItem],
   );
+
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+
+  const filteredFridgeItems = useMemo(() => {
+    if (normalizedSearchQuery.length > 0) {
+      return fridgeItems.filter((item) =>
+        item.name.toLowerCase().includes(normalizedSearchQuery),
+      );
+    }
+
+    return fridgeItems.filter((item) => {
+      const matchesCategory =
+        selectedCategory === "All" || item.category === selectedCategory;
+
+      return matchesCategory;
+    });
+  }, [fridgeItems, normalizedSearchQuery, selectedCategory]);
+
+  const displayCategory = useMemo(() => {
+    if (normalizedSearchQuery.length === 0) {
+      return selectedCategory;
+    }
+
+    const matchingCategories = new Set(
+      filteredFridgeItems.map((item) => item.category),
+    );
+
+    if (matchingCategories.size === 1) {
+      return Array.from(matchingCategories)[0];
+    }
+
+    return "All";
+  }, [filteredFridgeItems, normalizedSearchQuery, selectedCategory]);
 
   const openAddModal = () => {
     setModalMode("create");
@@ -362,6 +397,8 @@ export default function FridgePageClient() {
           </div>
           <input
             type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search ingredients in your fridge..."
             className="h-14 w-full rounded-xl border-none bg-surface-container-lowest pl-12 pr-4 font-medium placeholder:text-on-surface-variant/50 shadow-sm focus:ring-2 focus:ring-primary/20"
           />
@@ -382,8 +419,9 @@ export default function FridgePageClient() {
               <button
                 key={category.name}
                 type="button"
+                onClick={() => setSelectedCategory(category.name)}
                 className={
-                  category.active
+                  displayCategory === category.name
                     ? "flex-shrink-0 rounded-xl bg-primary px-6 py-3 font-semibold text-on-primary transition-all active:scale-95"
                     : "flex-shrink-0 rounded-xl bg-surface-container-low px-6 py-3 font-semibold text-on-surface transition-all hover:bg-surface-container-highest active:scale-95"
                 }
@@ -398,7 +436,7 @@ export default function FridgePageClient() {
           <div className="flex items-center justify-between">
             <h2 className="font-headline text-2xl font-bold tracking-tight">Stock Inventory</h2>
             <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-              {isLoading ? "Loading..." : `${fridgeItems.length} Items Total`}
+              {isLoading ? "Loading..." : `${filteredFridgeItems.length} Items`}
             </span>
           </div>
 
@@ -431,7 +469,7 @@ export default function FridgePageClient() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {fridgeItems.map((item) => {
+              {filteredFridgeItems.map((item) => {
                 const visual = getPresentation(item.expiryDate);
                 const isMenuOpen = menuOpenItemId === item.id;
 
@@ -499,11 +537,12 @@ export default function FridgePageClient() {
                 );
               })}
 
-              {fridgeItems.length === 0 ? (
+              {filteredFridgeItems.length === 0 ? (
                 <div className="rounded-xl bg-surface-container-low p-6 text-center">
-                  <p className="font-semibold">No fridge items yet.</p>
-                  <p className="text-sm text-on-surface-variant">
-                    Add your first ingredient from the API to see it here.
+                  <p className="font-semibold">
+                    {searchQuery.trim()
+                      ? `No fridge items found for "${searchQuery.trim()}".`
+                      : "No fridge items found."}
                   </p>
                 </div>
               ) : null}
