@@ -33,7 +33,7 @@ type FridgeHighlight = {
   iconColorClass: string;
   href?: string;
   ariaLabel?: string;
-  countKey?: "activeGroceryCount";
+  countKey?: "activeGroceryCount" | "fridgeItemCount";
 };
 
 type DashboardSummary = {
@@ -45,6 +45,7 @@ type DashboardSummary = {
   macroCurrent: MacroSummary;
   caloriesCurrent?: number;
   nearExpiryItems: NearExpiryItem[];
+  fridgeItemCount: number;
   activeGroceryCount: number;
 };
 
@@ -126,12 +127,13 @@ const emptyMacroSummary: MacroSummary = {
 
 const fridgeHighlights: FridgeHighlight[] = [
   {
-    title: "12 Items",
+    title: "0 Items",
     subtitle: "Freshly stocked",
     icon: "kitchen",
     iconColorClass: "text-primary",
     href: "/fridge",
     ariaLabel: "Open fridge",
+    countKey: "fridgeItemCount",
   },
   {
     title: "Grocery List",
@@ -160,6 +162,7 @@ const fallbackSummary: DashboardSummary = {
   macroTargets: emptyMacroSummary,
   macroCurrent: emptyMacroSummary,
   nearExpiryItems: [],
+  fridgeItemCount: 0,
   activeGroceryCount: 0,
 };
 
@@ -730,10 +733,16 @@ export default function DashboardPageClient() {
             </div>
 
             {fridgeHighlights.map((highlight) => {
+              const fridgeItemCount = summary.fridgeItemCount ?? 0;
+              const activeGroceryCount = summary.activeGroceryCount ?? 0;
+              const title =
+                highlight.countKey === "fridgeItemCount"
+                  ? `${fridgeItemCount} Item${fridgeItemCount === 1 ? "" : "s"}`
+                  : highlight.title;
               const subtitle =
                 highlight.countKey === "activeGroceryCount"
-                  ? `${summary.activeGroceryCount} active item${
-                      summary.activeGroceryCount === 1 ? "" : "s"
+                  ? `${activeGroceryCount} active item${
+                      activeGroceryCount === 1 ? "" : "s"
                     }`
                   : highlight.subtitle;
 
@@ -744,7 +753,7 @@ export default function DashboardPageClient() {
                       {highlight.icon}
                     </span>
                   </div>
-                  <h3 className="font-headline font-bold">{highlight.title}</h3>
+                  <h3 className="font-headline font-bold">{title}</h3>
                   <p className="text-sm text-on-surface-variant">{subtitle}</p>
                 </>
               );
