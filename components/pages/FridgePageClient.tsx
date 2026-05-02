@@ -200,6 +200,8 @@ export default function FridgePageClient() {
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
   const [menuOpenItemId, setMenuOpenItemId] = useState<string | null>(null);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [itemPendingDelete, setItemPendingDelete] =
+    useState<FridgeItemRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
   const [editingItem, setEditingItem] = useState<FridgeItemRecord | null>(null);
@@ -266,6 +268,21 @@ export default function FridgePageClient() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isDeleteExpiredModalOpen, isDeletingExpired]);
+
+  useEffect(() => {
+    if (!itemPendingDelete) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !deletingItemId) {
+        setItemPendingDelete(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [deletingItemId, itemPendingDelete]);
 
   const modalInitialValues = useMemo<FridgeItemFormInitialValues | undefined>(
     () =>
@@ -437,11 +454,30 @@ export default function FridgePageClient() {
     }
   };
 
-  const handleDeleteItem = async (item: FridgeItemRecord) => {
-    const shouldDelete = window.confirm(`Delete "${item.name}" from your fridge?`);
-    if (!shouldDelete) {
+  const openDeleteItemModal = (item: FridgeItemRecord) => {
+    if (deletingItemId === item.id) {
       return;
     }
+
+    setActionErrorMessage(null);
+    setMenuOpenItemId(null);
+    setItemPendingDelete(item);
+  };
+
+  const closeDeleteItemModal = () => {
+    if (deletingItemId) {
+      return;
+    }
+
+    setItemPendingDelete(null);
+  };
+
+  const handleDeleteItem = async () => {
+    if (!itemPendingDelete) {
+      return;
+    }
+
+    const item = itemPendingDelete;
 
     try {
       setDeletingItemId(item.id);
@@ -465,9 +501,17 @@ export default function FridgePageClient() {
         throw new Error(result?.message ?? "Failed to delete fridge item.");
       }
 
+      setToast({
+        type: "success",
+        message: `"${item.name}" deleted from fridge.`,
+      });
+      setItemPendingDelete(null);
       await fetchFridgeItems();
-    } catch (error) {
-      setActionErrorMessage(error instanceof Error ? error.message : "Unexpected error.");
+    } catch {
+      setToast({
+        type: "error",
+        message: `Failed to delete "${item.name}". Please try again.`,
+      });
     } finally {
       setDeletingItemId(null);
     }
@@ -687,7 +731,7 @@ export default function FridgePageClient() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => void handleDeleteItem(item)}
+                          onClick={() => openDeleteItemModal(item)}
                           disabled={deletingItemId === item.id}
                           className="w-full px-4 py-2 text-left text-sm font-medium text-error transition-colors hover:bg-error-container/20 disabled:cursor-not-allowed disabled:opacity-60"
                         >
@@ -795,6 +839,64 @@ export default function FridgePageClient() {
         onClose={closeModal}
         onSubmit={submitModal}
       />
+
+      {itemPendingDelete ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4"
+          onClick={closeDeleteItemModal}
+          aria-describedby="delete-fridge-item-description"
+          aria-labelledby="delete-fridge-item-title"
+          aria-modal="true"
+          role="dialog"
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-surface p-6 editorial-shadow"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-error-container/10 text-error">
+                <span className="material-symbols-outlined">delete</span>
+              </div>
+              <div>
+                <h3
+                  id="delete-fridge-item-title"
+                  className="font-headline text-2xl font-bold text-on-surface"
+                >
+                  Delete item?
+                </h3>
+                <p
+                  id="delete-fridge-item-description"
+                  className="mt-2 text-sm leading-relaxed text-on-surface-variant"
+                >
+                  Delete &quot;{itemPendingDelete.name}&quot; from your fridge?
+                </p>
+                <p className="mt-1 text-xs font-semibold text-on-surface-variant">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteItemModal}
+                disabled={Boolean(deletingItemId)}
+                className="rounded-xl border border-outline-variant/40 px-4 py-2 font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDeleteItem()}
+                disabled={Boolean(deletingItemId)}
+                className="rounded-xl bg-error px-4 py-2 font-semibold text-on-error transition-opacity hover:opacity-95 disabled:opacity-70"
+              >
+                {deletingItemId === itemPendingDelete.id ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isDeleteExpiredModalOpen ? (
         <div
