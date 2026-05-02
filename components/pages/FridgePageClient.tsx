@@ -37,6 +37,16 @@ type FridgeMutationResponse = {
   message?: string;
 };
 
+type DeleteExpiredResponse = {
+  deletedCount: number;
+  message?: string;
+};
+
+type ToastState = {
+  message: string;
+  type: "success" | "error";
+};
+
 const categories: FridgeCategory[] = [
   { name: "All", active: true },
   { name: "Vegetables" },
@@ -73,6 +83,18 @@ const getExpiryDays = (expiryDate: string | null) => {
 
   expiry.setHours(0, 0, 0, 0);
   return Math.ceil((expiry.getTime() - today.getTime()) / dayInMilliseconds);
+};
+
+const getExpiryStatusLabel = (days: number) => {
+  if (days === 0) {
+    return "Expires today";
+  }
+
+  if (days === 1) {
+    return "Expires tomorrow";
+  }
+
+  return `Expires in ${days} days`;
 };
 
 const getPresentation = (expiryDate: string | null): FridgeItemPresentation => {
@@ -185,6 +207,9 @@ export default function FridgePageClient() {
   const [modalErrorMessage, setModalErrorMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [isDeletingExpired, setIsDeletingExpired] = useState(false);
+  const [isDeleteExpiredModalOpen, setIsDeleteExpiredModalOpen] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
 
   const fetchFridgeItems = useCallback(async () => {
     try {
@@ -214,6 +239,33 @@ export default function FridgePageClient() {
   useEffect(() => {
     void fetchFridgeItems();
   }, [fetchFridgeItems]);
+
+  useEffect(() => {
+    if (!toast) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setToast(null);
+    }, 3500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [toast]);
+
+  useEffect(() => {
+    if (!isDeleteExpiredModalOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isDeletingExpired) {
+        setIsDeleteExpiredModalOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isDeleteExpiredModalOpen, isDeletingExpired]);
 
   const modalInitialValues = useMemo<FridgeItemFormInitialValues | undefined>(
     () =>
@@ -261,6 +313,41 @@ export default function FridgePageClient() {
 
     return "All";
   }, [filteredFridgeItems, normalizedSearchQuery, selectedCategory]);
+
+  const expiredCount = useMemo(
+    () =>
+      fridgeItems.filter((item) => {
+        const expiryDays = getExpiryDays(item.expiryDate);
+        return expiryDays !== null && expiryDays < 0;
+      }).length,
+    [fridgeItems],
+  );
+
+  const urgentFridgeItems = useMemo(
+    () =>
+      fridgeItems
+        .map((item) => {
+          const expiryDays = getExpiryDays(item.expiryDate);
+          return expiryDays === null ? null : { item, expiryDays };
+        })
+        .filter(
+          (
+            value,
+          ): value is {
+            item: FridgeItemRecord;
+            expiryDays: number;
+          } => value !== null && value.expiryDays >= 0 && value.expiryDays <= 2,
+        )
+        .sort((a, b) => {
+          if (a.expiryDays !== b.expiryDays) {
+            return a.expiryDays - b.expiryDays;
+          }
+
+          return a.item.name.localeCompare(b.item.name);
+        })
+        .slice(0, 5),
+    [fridgeItems],
+  );
 
   const openAddModal = () => {
     setModalMode("create");
@@ -386,6 +473,66 @@ export default function FridgePageClient() {
     }
   };
 
+  const openDeleteExpiredModal = () => {
+    if (expiredCount === 0 || isDeletingExpired) {
+      return;
+    }
+
+    setActionErrorMessage(null);
+    setMenuOpenItemId(null);
+    setIsDeleteExpiredModalOpen(true);
+  };
+
+  const closeDeleteExpiredModal = () => {
+    if (isDeletingExpired) {
+      return;
+    }
+
+    setIsDeleteExpiredModalOpen(false);
+  };
+
+  const handleDeleteExpiredItems = async () => {
+    try {
+      setIsDeletingExpired(true);
+      setActionErrorMessage(null);
+
+      const response = await fetch("/api/fridge/expired", {
+        method: "DELETE",
+      });
+
+      if (response.status === 401) {
+        router.replace("/login");
+        return;
+      }
+
+      const result = (await response
+        .json()
+        .catch(() => null)) as DeleteExpiredResponse | null;
+
+      if (!response.ok) {
+        throw new Error(result?.message ?? "Failed to delete expired fridge items.");
+      }
+
+      const deletedCount = result?.deletedCount ?? 0;
+      setToast({
+        type: "success",
+        message:
+          deletedCount === 1
+            ? "1 expired item deleted."
+            : `${deletedCount} expired items deleted.`,
+      });
+      setIsDeleteExpiredModalOpen(false);
+      await fetchFridgeItems();
+    } catch {
+      setToast({
+        type: "error",
+        message: "Failed to delete expired items. Please try again.",
+      });
+    } finally {
+      setIsDeletingExpired(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-surface font-body text-on-surface pb-32">
       <TopAppBar />
@@ -433,11 +580,26 @@ export default function FridgePageClient() {
         </section>
 
         <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-headline text-2xl font-bold tracking-tight">Stock Inventory</h2>
-            <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-              {isLoading ? "Loading..." : `${filteredFridgeItems.length} Items`}
-            </span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-headline text-2xl font-bold tracking-tight">Stock Inventory</h2>
+              <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+                {isLoading ? "Loading..." : `${filteredFridgeItems.length} Items`}
+              </span>
+            </div>
+
+            {expiredCount > 0 ? (
+              <button
+                type="button"
+                onClick={openDeleteExpiredModal}
+                disabled={isDeletingExpired}
+                className="self-start rounded-xl bg-error-container/10 px-4 py-2 text-sm font-bold text-error transition-colors hover:bg-error-container/20 disabled:cursor-not-allowed disabled:opacity-60 sm:self-auto"
+              >
+                {isDeletingExpired
+                  ? "Deleting expired..."
+                  : `Delete expired (${expiredCount})`}
+              </button>
+            ) : null}
           </div>
 
           {isLoading ? (
@@ -563,17 +725,46 @@ export default function FridgePageClient() {
                   </span>
                   <span className="text-xs font-bold uppercase tracking-widest">AI Insight</span>
                 </div>
-                <h3 className="mb-2 font-headline text-xl font-bold">Save the Carrots!</h3>
-                <p className="mb-4 text-sm leading-relaxed text-on-surface/80">
-                  Your carrots will expire in 48 hours. Try making a{" "}
-                  <strong>Maple-Roasted Root Salad</strong> with your Greek Yogurt.
-                </p>
-                <Link
-                  href="/ai-recipe"
-                  className="rounded-lg bg-secondary px-4 py-2 text-sm font-bold text-on-secondary transition-transform active:scale-95"
-                >
-                  Get Recipe
-                </Link>
+
+                {urgentFridgeItems.length > 0 ? (
+                  <>
+                    <h3 className="mb-2 font-headline text-xl font-bold">
+                      Use these soon!
+                    </h3>
+                    <p className="mb-4 text-sm leading-relaxed text-on-surface/80">
+                      These ingredients are close to expiring. Use them before they
+                      go to waste.
+                    </p>
+                    <div className="mb-4 grid gap-2">
+                      {urgentFridgeItems.map(({ item, expiryDays }) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-surface-container-lowest/70 px-3 py-2"
+                        >
+                          <span className="text-sm font-bold">{item.name}</span>
+                          <span className="shrink-0 text-xs font-semibold text-secondary">
+                            {getExpiryStatusLabel(expiryDays)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <Link
+                      href="/ai-recipe"
+                      className="rounded-lg bg-secondary px-4 py-2 text-sm font-bold text-on-secondary transition-transform active:scale-95"
+                    >
+                      Generate recipe ideas
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="mb-2 font-headline text-xl font-bold">
+                      All fresh for now
+                    </h3>
+                    <p className="text-sm leading-relaxed text-on-surface/80">
+                      No ingredients are close to expiring right now.
+                    </p>
+                  </>
+                )}
               </div>
               <div className="hidden w-24 sm:block">
                 <img
@@ -604,6 +795,76 @@ export default function FridgePageClient() {
         onClose={closeModal}
         onSubmit={submitModal}
       />
+
+      {isDeleteExpiredModalOpen ? (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4"
+          onClick={closeDeleteExpiredModal}
+          aria-modal="true"
+          role="dialog"
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-surface p-6 editorial-shadow"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-error-container/10 text-error">
+                <span className="material-symbols-outlined">delete</span>
+              </div>
+              <div>
+                <h3 className="font-headline text-2xl font-bold text-on-surface">
+                  Delete expired items?
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
+                  This will permanently remove all expired fridge items from your
+                  inventory.
+                </p>
+                <p className="mt-1 text-xs font-semibold text-on-surface-variant">
+                  Fresh items will not be affected.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteExpiredModal}
+                disabled={isDeletingExpired}
+                className="rounded-xl border border-outline-variant/40 px-4 py-2 font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDeleteExpiredItems()}
+                disabled={isDeletingExpired}
+                className="rounded-xl bg-error px-4 py-2 font-semibold text-on-error transition-opacity hover:opacity-95 disabled:opacity-70"
+              >
+                {isDeletingExpired ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {toast ? (
+        <div className="fixed bottom-28 right-6 z-[100] w-[calc(100%-3rem)] max-w-sm">
+          <div
+            className={`rounded-2xl border p-4 shadow-xl ${
+              toast.type === "success"
+                ? "border-primary-container bg-primary-container text-on-primary-container"
+                : "border-error-container/30 bg-error-container/10 text-error"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-xl">
+                {toast.type === "success" ? "check_circle" : "error"}
+              </span>
+              <p className="text-sm font-semibold">{toast.message}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <BottomNav />
     </div>
