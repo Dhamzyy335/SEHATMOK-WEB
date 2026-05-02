@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import RecipeBackButton from "@/components/RecipeBackButton";
 import RecipeBookmarkButton from "@/components/RecipeBookmarkButton";
+import AddToMealPlannerButton from "@/components/meal-plans/AddToMealPlannerButton";
 import { requirePageUserId } from "@/lib/page-auth";
 import { prisma } from "@/lib/prisma";
 
@@ -298,7 +299,7 @@ export default async function RecipeDetailsPage({
         </div>
 
         <div className="fixed bottom-28 left-0 right-0 z-40 mx-auto max-w-screen-md px-6">
-          <div className="glass-card flex items-center justify-between rounded-full border border-white/20 p-2 shadow-2xl">
+          <div className="glass-card flex flex-col gap-3 rounded-[2rem] border border-white/20 p-2 shadow-2xl sm:flex-row sm:items-center sm:justify-between sm:rounded-full">
             <div className="-space-x-2 ml-4 flex">
               <img
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuAglRuBBnsa1HLc-9O3rSIC5qibWR9MmqfHZx7K5I4SUQAbehW6_9i8oiInStmW8RuvRgR1DQaJx6CwUolKkeBuz29f8DIewmK4RGZwfmtIGjvY6iRUCqBJVqGQRhnzZ-3hu9fAAijKIf_5-Vcs0t2Hna0O490w6IWj-QXxJINkOorFVWz0V15FMpxDVCixVAnVwcmSimrMEMpRWTrtTUhHn-Td7ooDYYzKm6SoBhQH6toGYb0UTF8lRw4Qp9l99TkX4elG6NouFRHZ"
@@ -314,13 +315,21 @@ export default async function RecipeDetailsPage({
                 +4k
               </div>
             </div>
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-full bg-primary px-8 py-3 font-headline font-bold text-on-primary shadow-lg shadow-primary/20 transition-transform active:scale-95"
-            >
-              <span className="material-symbols-outlined text-xl">restaurant</span>
-              Start Cooking
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <AddToMealPlannerButton
+                recipeId={recipe.id}
+                recipeName={recipe.name}
+                variant="compact"
+                className="w-full px-5 py-3 sm:w-auto"
+              />
+              <button
+                type="button"
+                className="flex items-center justify-center gap-2 rounded-full bg-primary px-8 py-3 font-headline font-bold text-on-primary shadow-lg shadow-primary/20 transition-transform active:scale-95"
+              >
+                <span className="material-symbols-outlined text-xl">restaurant</span>
+                Start Cooking
+              </button>
+            </div>
           </div>
         </div>
       </main>
