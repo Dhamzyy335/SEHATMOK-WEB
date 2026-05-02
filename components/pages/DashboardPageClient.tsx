@@ -31,6 +31,8 @@ type FridgeHighlight = {
   subtitle: string;
   icon: string;
   iconColorClass: string;
+  href?: string;
+  ariaLabel?: string;
 };
 
 type DashboardSummary = {
@@ -126,6 +128,8 @@ const fridgeHighlights: FridgeHighlight[] = [
     subtitle: "Freshly stocked",
     icon: "kitchen",
     iconColorClass: "text-primary",
+    href: "/fridge",
+    ariaLabel: "Open fridge",
   },
   {
     title: "Grocery List",
@@ -719,20 +723,41 @@ export default function DashboardPageClient() {
               </div>
             </div>
 
-            {fridgeHighlights.map((highlight) => (
-              <div
-                key={highlight.title}
-                className="flex flex-col items-center justify-center rounded-xl bg-surface-container-lowest p-6 text-center editorial-shadow"
-              >
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-container-low">
-                  <span className={`material-symbols-outlined text-3xl ${highlight.iconColorClass}`}>
-                    {highlight.icon}
-                  </span>
+            {fridgeHighlights.map((highlight) => {
+              const content = (
+                <>
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-container-low">
+                    <span className={`material-symbols-outlined text-3xl ${highlight.iconColorClass}`}>
+                      {highlight.icon}
+                    </span>
+                  </div>
+                  <h3 className="font-headline font-bold">{highlight.title}</h3>
+                  <p className="text-sm text-on-surface-variant">{highlight.subtitle}</p>
+                </>
+              );
+
+              if (highlight.href) {
+                return (
+                  <Link
+                    key={highlight.title}
+                    href={highlight.href}
+                    aria-label={highlight.ariaLabel}
+                    className="flex flex-col items-center justify-center rounded-xl bg-surface-container-lowest p-6 text-center editorial-shadow transition-colors hover:bg-surface-container-low"
+                  >
+                    {content}
+                  </Link>
+                );
+              }
+
+              return (
+                <div
+                  key={highlight.title}
+                  className="flex flex-col items-center justify-center rounded-xl bg-surface-container-lowest p-6 text-center editorial-shadow"
+                >
+                  {content}
                 </div>
-                <h3 className="font-headline font-bold">{highlight.title}</h3>
-                <p className="text-sm text-on-surface-variant">{highlight.subtitle}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       </main>
