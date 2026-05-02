@@ -7,6 +7,7 @@ import {
 } from "@/lib/ai-recipe-schema";
 import { generateRecipeWithGemini } from "@/lib/gemini";
 import { prisma } from "@/lib/prisma";
+import { calculateIngredientAvailability } from "@/lib/recommendations";
 
 export const runtime = "nodejs";
 
@@ -107,7 +108,19 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ candidates: candidatesPayload.candidates });
+    const candidatesWithAvailability = candidatesPayload.candidates.map((candidate) => {
+      const availability = calculateIngredientAvailability(
+        ingredientNames,
+        candidate.ingredients.map((ingredient) => ingredient.name),
+      );
+
+      return {
+        ...candidate,
+        ...availability,
+      };
+    });
+
+    return NextResponse.json({ candidates: candidatesWithAvailability });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ message: "Unauthorized." }, { status: 401 });

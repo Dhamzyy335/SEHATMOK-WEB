@@ -51,6 +51,10 @@ type AiRecipeCandidate = {
     fat: number;
     fiber: number;
   };
+  matchedIngredientCount: number;
+  totalRequiredIngredientCount: number;
+  ingredientMatchPercent: number;
+  missingIngredients: string[];
 };
 
 type AiRecipeCandidatesResponse = {
@@ -111,6 +115,29 @@ const formatCalories = (value: number | null): string => {
   return Math.round(value).toString();
 };
 
+const getMissingIngredientsLabel = (ingredients: string[]): string | null => {
+  if (ingredients.length === 0) {
+    return null;
+  }
+
+  const visibleIngredients = ingredients.slice(0, 3);
+  const hiddenCount = ingredients.length - visibleIngredients.length;
+
+  return `${visibleIngredients.join(", ")}${
+    hiddenCount > 0 ? `, +${hiddenCount} more` : ""
+  }`;
+};
+
+const getCandidateSavePayload = (candidate: AiRecipeCandidate) => ({
+  name: candidate.name,
+  description: candidate.description,
+  servings: candidate.servings,
+  cookTimeMinutes: candidate.cookTimeMinutes,
+  ingredients: candidate.ingredients,
+  steps: candidate.steps,
+  nutrition: candidate.nutrition,
+});
+
 const AI_RECIPE_STORAGE_KEY = "aiRecipe:lastState";
 const AI_RECIPE_STATE_MAX_AGE_MS = 30 * 60 * 1000;
 
@@ -133,6 +160,7 @@ const isCandidate = (value: unknown): value is AiRecipeCandidate => {
   }
 
   const nutrition = value.nutrition;
+  const missingIngredients = value.missingIngredients;
 
   return (
     typeof value.name === "string" &&
@@ -146,7 +174,12 @@ const isCandidate = (value: unknown): value is AiRecipeCandidate => {
     isNumber(nutrition.protein) &&
     isNumber(nutrition.carbs) &&
     isNumber(nutrition.fat) &&
-    isNumber(nutrition.fiber)
+    isNumber(nutrition.fiber) &&
+    isNumber(value.matchedIngredientCount) &&
+    isNumber(value.totalRequiredIngredientCount) &&
+    isNumber(value.ingredientMatchPercent) &&
+    Array.isArray(missingIngredients) &&
+    missingIngredients.every((ingredient) => typeof ingredient === "string")
   );
 };
 
@@ -487,7 +520,7 @@ export default function AiRecipePageClient() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ recipe: candidate }),
+        body: JSON.stringify({ recipe: getCandidateSavePayload(candidate) }),
       });
 
       if (response.status === 401) {
@@ -580,6 +613,9 @@ export default function AiRecipePageClient() {
 
   const hasAiCandidates = aiCandidates.length > 0;
   const featuredCandidate = hasAiCandidates ? aiCandidates[0] : null;
+  const featuredCandidateMissingLabel = featuredCandidate
+    ? getMissingIngredientsLabel(featuredCandidate.missingIngredients)
+    : null;
   const featuredMetrics = hasAiCandidates
     ? {
         name: featuredCandidate?.name ?? "",
@@ -628,7 +664,7 @@ export default function AiRecipePageClient() {
   const featuredBookmarkDisabled =
     !featuredRecipe || hasAiCandidates || isLoadingBookmarks || featuredIsSaving;
   const featuredBadgeLabel = hasAiCandidates
-    ? `AI Option ${aiCandidates.length > 1 ? `1/${aiCandidates.length}` : "1"}`
+    ? `${featuredCandidate?.ingredientMatchPercent ?? 0}% Ingredients Available`
     : featuredRecipe
       ? `${featuredRecipe.matchPercent}% Match`
       : isGenerating || isLoadingInitialRecommendations
@@ -895,6 +931,24 @@ export default function AiRecipePageClient() {
                     <span className="font-bold">{formatMacro(featuredMetrics.fat)}g</span>
                   </div>
                 </div>
+                {featuredCandidate ? (
+                  <div className="rounded-2xl bg-surface-container-low px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-bold uppercase tracking-widest text-secondary">
+                        {featuredCandidate.ingredientMatchPercent}% Ingredients Available
+                      </span>
+                      <span className="shrink-0 text-xs font-semibold text-on-surface-variant">
+                        {featuredCandidate.matchedIngredientCount}/
+                        {featuredCandidate.totalRequiredIngredientCount} available
+                      </span>
+                    </div>
+                    {featuredCandidateMissingLabel ? (
+                      <p className="mt-2 text-xs text-on-surface-variant">
+                        Missing: {featuredCandidateMissingLabel}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
                 <div className="border-t border-outline-variant/10 pt-4">
                   {hasAiCandidates ? (
                     <button
@@ -942,6 +996,9 @@ export default function AiRecipePageClient() {
                   const isSavingCandidate =
                     isSavingCandidateIndex === candidateIndex;
                   const isCandidateDisabled = isSavingCandidateIndex !== null;
+                  const missingIngredientsLabel = getMissingIngredientsLabel(
+                    candidate.missingIngredients,
+                  );
 
                   return (
                     <div
@@ -962,6 +1019,20 @@ export default function AiRecipePageClient() {
                             <span>C {formatMacro(candidate.nutrition.carbs)}g</span>
                             <span>F {formatMacro(candidate.nutrition.fat)}g</span>
                           </div>
+                          <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-widest text-secondary">
+                            <span>
+                              {candidate.ingredientMatchPercent}% Ingredients Available
+                            </span>
+                            <span>
+                              {candidate.matchedIngredientCount}/
+                              {candidate.totalRequiredIngredientCount} available
+                            </span>
+                          </div>
+                          {missingIngredientsLabel ? (
+                            <p className="mt-2 text-xs text-on-surface-variant">
+                              Missing: {missingIngredientsLabel}
+                            </p>
+                          ) : null}
                         </div>
                         <button
                           type="button"

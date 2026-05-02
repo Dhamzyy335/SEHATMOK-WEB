@@ -83,6 +83,71 @@ export type IngredientScoreResult = {
   matchPercent: number;
 };
 
+export type IngredientAvailabilityResult = {
+  matchedIngredientCount: number;
+  totalRequiredIngredientCount: number;
+  ingredientMatchPercent: number;
+  missingIngredients: string[];
+};
+
+export const calculateIngredientAvailability = (
+  availableIngredientNames: string[],
+  requiredIngredientNames: string[],
+): IngredientAvailabilityResult => {
+  const availableNames = Array.from(
+    new Set(
+      availableIngredientNames
+        .map((name) => normalizeName(name))
+        .filter((name) => name.length > 0),
+    ),
+  );
+
+  const requiredIngredients = requiredIngredientNames
+    .map((name) => ({
+      originalName: name.trim(),
+      normalizedName: normalizeName(name),
+    }))
+    .filter(
+      (ingredient) =>
+        ingredient.originalName.length > 0 &&
+        ingredient.normalizedName.length > 0,
+    );
+
+  if (requiredIngredients.length === 0) {
+    return {
+      matchedIngredientCount: 0,
+      totalRequiredIngredientCount: 0,
+      ingredientMatchPercent: 0,
+      missingIngredients: [],
+    };
+  }
+
+  const missingIngredients: string[] = [];
+  let matchedIngredientCount = 0;
+
+  requiredIngredients.forEach((requiredIngredient) => {
+    const hasMatch = availableNames.some((availableName) =>
+      isMatch(availableName, requiredIngredient.normalizedName),
+    );
+
+    if (hasMatch) {
+      matchedIngredientCount += 1;
+      return;
+    }
+
+    missingIngredients.push(requiredIngredient.originalName);
+  });
+
+  return {
+    matchedIngredientCount,
+    totalRequiredIngredientCount: requiredIngredients.length,
+    ingredientMatchPercent: Math.round(
+      (matchedIngredientCount / requiredIngredients.length) * 100,
+    ),
+    missingIngredients,
+  };
+};
+
 export const calculateIngredientScore = (
   selectedIngredientNames: string[],
   recipeIngredientNames: string[],
