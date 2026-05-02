@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Recipe Logs - SehatMok</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error-container": "#ffdad6",
+                    "surface-container-high": "#e2e8f8",
+                    "on-secondary-fixed": "#002117",
+                    "inverse-primary": "#4edea3",
+                    "surface-container-low": "#f0f3ff",
+                    "error": "#ba1a1a",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-container": "#306d58",
+                    "surface": "#f9f9ff",
+                    "outline-variant": "#bbcabf",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-container": "#2d3c37",
+                    "on-secondary-fixed-variant": "#0b513d",
+                    "secondary-container": "#adedd3",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-dim": "#d3daea",
+                    "surface-tint": "#006c49",
+                    "secondary-fixed-dim": "#95d3ba",
+                    "inverse-on-surface": "#ebf1ff",
+                    "primary-fixed": "#6ffbbe",
+                    "background": "#f9f9ff",
+                    "on-primary-container": "#00422b",
+                    "tertiary": "#52625c",
+                    "on-primary-fixed": "#002113",
+                    "inverse-surface": "#2a313d",
+                    "surface-container-highest": "#dce2f3",
+                    "on-tertiary-fixed": "#101e1a",
+                    "primary": "#006c49",
+                    "tertiary-container": "#96a69f",
+                    "on-surface": "#151c27",
+                    "surface-variant": "#dce2f3",
+                    "primary-fixed-dim": "#4edea3",
+                    "primary-container": "#10b981",
+                    "on-tertiary-fixed-variant": "#3b4a44",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#bacac3",
+                    "surface-container": "#e7eefe",
+                    "on-error-container": "#93000a",
+                    "outline": "#6c7a71",
+                    "on-surface-variant": "#3c4a42",
+                    "surface-bright": "#f9f9ff",
+                    "secondary-fixed": "#b0f0d6",
+                    "on-background": "#151c27",
+                    "on-primary-fixed-variant": "#005236",
+                    "secondary": "#2b6954",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed": "#d5e6df"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "8px",
+                    "xl": "48px",
+                    "md": "16px",
+                    "gutter": "24px",
+                    "xs": "4px",
+                    "sm": "8px",
+                    "lg": "24px",
+                    "margin": "32px"
+            },
+            "fontFamily": {
+                    "body-sm": ["Manrope"],
+                    "body-md": ["Manrope"],
+                    "label-sm": ["Manrope"],
+                    "body-lg": ["Manrope"],
+                    "label-md": ["Manrope"],
+                    "h2": ["Manrope"],
+                    "h3": ["Manrope"],
+                    "h1": ["Manrope"]
+            },
+            "fontSize": {
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "label-sm": ["11px", {"lineHeight": "1", "fontWeight": "500"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "h2": ["28px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "h3": ["22px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "h1": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-64 border-r border-slate-100 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 hidden md:flex flex-col p-4 space-y-2 z-50">
+<div class="mb-8 px-4 flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold">
+                S
+            </div>
+<div>
+<h1 class="text-lg font-extrabold text-emerald-800 dark:text-emerald-400 font-h3 text-h3">SehatMok</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Admin Console</p>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto space-y-2 pr-2">
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">group</span>
+<span>User Management</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">restaurant_menu</span>
+<span>Recipe Management</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">kitchen</span>
+<span>Fridge Monitoring</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">format_list_bulleted</span>
+<span>Ingredients</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-semibold font-manrope text-sm tracking-wide scale-98 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history_edu</span>
+<span>AI Recipe Logs</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="docked full-width top-0 z-40 border-b border-slate-100 dark:border-slate-800 shadow-[0px_1px_2px_rgba(0,0,0,0.03)] bg-white dark:bg-slate-900 flex items-center justify-between px-6 h-16 w-full lg:pl-6 sticky">
+<div class="flex items-center">
+<h2 class="font-h2 text-h2 text-on-surface">AI Recipe Logs</h2>
+</div>
+<div class="flex items-center space-x-4">
+<button class="text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors p-2 rounded-full opacity-80 duration-150">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors p-2 rounded-full opacity-80 duration-150">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors p-2 rounded-full opacity-80 duration-150">
+<span class="material-symbols-outlined">apps</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant ml-2">
+<img alt="Administrator Profile" class="w-full h-full object-cover" data-alt="A clean, professional headshot avatar for an administrative user profile, set against a solid forest green background with white initials." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5n2JcOfSlZB5lXao-ggmvVphWt-zO3OlxZw27xBHwCsfuE4DIjbxq-UAzW0ihouuCycU4gKaavUqGh47HJ84eeIIIJaR09wh2tNpu4B1rGKyyy3uzBfgvOj6MDtlUNfPfLfEnHVavMPyyBRUOshFEsOVNVnbbvdverBbeVLlijdklwdLp7eBpqtvLxPQ-NSkZFUYH4dbtwf1O7wcNzlwK7oavT87ZFLeSlw8pBlv5cDyuphcgfujM2eGFUEDNP1mQNP-qy5qXRGVA"/>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-gutter flex-1 bg-background overflow-x-hidden">
+<!-- Controls / Filters -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-xl gap-4">
+<div class="flex space-x-2">
+<button class="bg-surface-container-low text-on-surface px-4 py-2 rounded-lg font-label-md text-label-md border border-outline-variant flex items-center hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined mr-2 text-sm">filter_list</span>
+                        Filter Logs
+                    </button>
+<button class="bg-surface-container-low text-on-surface px-4 py-2 rounded-lg font-label-md text-label-md border border-outline-variant flex items-center hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined mr-2 text-sm">download</span>
+                        Export
+                    </button>
+</div>
+<div class="relative w-full sm:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-white border border-outline-variant rounded-lg font-body-sm text-body-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow shadow-[0px_2px_4px_rgba(0,0,0,0.02)]" placeholder="Search Request ID or User..." type="text"/>
+</div>
+</div>
+<!-- Data Table Card -->
+<div class="bg-white rounded-xl shadow-[0px_10px_25px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden">
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-slate-100 bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+<th class="py-4 px-6 font-semibold">User / Req ID</th>
+<th class="py-4 px-6 font-semibold">Input Ingredients</th>
+<th class="py-4 px-6 font-semibold">AI Output / Status</th>
+<th class="py-4 px-6 font-semibold">Generated Time</th>
+<th class="py-4 px-6 font-semibold">Performance</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm divide-y divide-slate-50">
+<!-- Row 1: Success -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer">
+<td class="py-4 px-6 align-top">
+<div class="flex items-center space-x-3">
+<img alt="User avatar" class="w-8 h-8 rounded-full border border-outline-variant" data-alt="A small, circular avatar image of a user's face, clear and professional, typical of a modern web application profile picture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-e1bdI609jzieBv9jEsQEXcL0ccYSPIjB1nzZjQbSHH2DgTwEHNzhzEPP7Z27o9B3igxqLfPNdWUz3nkEJVL1qmA1JQtyKEpdSU0AGE9XhmOW-Eb-yzWQEgbPnSniw6ITAygQoAa0rbTmkisUt3JjJnLb_WaaEVCSvvALwm6-f6Da5w0tk4ui7xoCyLX-MwUwqqNUeAwMFLlZXf74Agt0dCo75L4YHWxaZp9Xg4mrS5b6xBUDPu2jdGJh37__FVccuA_beee80Ywx"/>
+<div>
+<div class="font-medium text-on-surface">USR-8921</div>
+<div class="text-outline text-xs mt-0.5">REQ-A41B</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-6 align-top max-w-xs">
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-1 bg-surface-container text-on-surface rounded text-xs font-medium border border-outline-variant/30">Chicken Breast</span>
+<span class="px-2 py-1 bg-surface-container text-on-surface rounded text-xs font-medium border border-outline-variant/30">Broccoli</span>
+<span class="px-2 py-1 bg-surface-container text-on-surface rounded text-xs font-medium border border-outline-variant/30">Garlic</span>
+<span class="px-2 py-1 bg-surface-container text-on-surface rounded text-xs font-medium border border-outline-variant/30">+3 more</span>
+</div>
+</td>
+<td class="py-4 px-6 align-top">
+<div class="flex flex-col space-y-2">
+<div class="flex items-center space-x-2">
+<span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container rounded-full font-label-sm text-label-sm flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-1">check_circle</span>
+                                                Success
+                                            </span>
+</div>
+<a class="text-primary hover:text-primary-fixed-dim font-medium truncate w-48 block transition-colors" href="#">Garlic Butter Chicken &amp; Veggies</a>
+</div>
+</td>
+<td class="py-4 px-6 align-top text-on-surface-variant">
+                                    Today, 14:32<br/>
+<span class="text-outline text-xs">0.8s latency</span>
+</td>
+<td class="py-4 px-6 align-top">
+<button class="p-1.5 text-outline hover:text-primary rounded hover:bg-surface-container transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-sm">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: Failed -->
+<tr class="hover:bg-error-container/10 transition-colors group cursor-pointer bg-error-container/5 border-l-2 border-l-error">
+<td class="py-4 px-6 align-top">
+<div class="flex items-center space-x-3">
+<img alt="User avatar" class="w-8 h-8 rounded-full border border-outline-variant" data-alt="A small, circular avatar image of a user's face, clear and professional, typical of a modern web application profile picture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAS6irclm6PXUc8jIVwrskbQhm3xKzufCQ--Q6wSPcalWRDji2ExN0WJUYBuvke54H08UNZ8VrisILBXDAxwL_GfCBExWQVrPb8Z6fPIvnpc1xbEJvBAy3SOjHXrmPz7feTYZP2zTq2xaPhQY-DXACHadRJQXgv1s_PJ4OZYQWX0TAZzLgdP9JtfZ8bwjWXs_I4ZghIQoAcT1z7A-II_CG7-ulNxSlEVKFemzVz-pg6x2RU8_mZ60mOfT4G1NsC62cFnbMcRGmXmFu_"/>
+<div>
+<div class="font-medium text-on-surface">USR-4412</div>
+<div class="text-outline text-xs mt-0.5">REQ-F99X</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-6 align-top max-w-xs">
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-1 bg-surface-container text-on-surface rounded text-xs font-medium border border-outline-variant/30">Ice</span>
+<span class="px-2 py-1 bg-surface-container text-on-surface rounded text-xs font-medium border border-outline-variant/30">Water</span>
+</div>
+</td>
+<td class="py-4 px-6 align-top">
+<div class="flex flex-col space-y-2">
+<div class="flex items-center space-x-2">
+<span class="px-2 py-0.5 bg-error-container text-on-error-container rounded-full font-label-sm text-label-sm flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-1">error</span>
+                                                Failed
+                                            </span>
+</div>
+<span class="text-error font-medium truncate w-48 block text-xs">Err: Insufficient macronutrients</span>
+</div>
+</td>
+<td class="py-4 px-6 align-top text-on-surface-variant">
+                                    Today, 11:15<br/>
+<span class="text-outline text-xs">1.2s latency</span>
+</td>
+<td class="py-4 px-6 align-top">
+<button class="p-1.5 text-outline hover:text-error rounded hover:bg-error-container/30 transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-sm">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: Success -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer">
+<td class="py-4 px-6 align-top">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface font-bold text-xs border border-outline-variant">
+                                            U3
+                                        </div>
+<div>
+<div class="font-medium text-on-surface">USR-1029</div>
+<div class="text-outline text-xs mt-0.5">REQ-B22C</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-6 align-top max-w-xs">
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-1 bg-surface-container text-on-surface rounded text-xs font-medium border border-outline-variant/30">Salmon</span>
+<span class="px-2 py-1 bg-surface-container text-on-surface rounded text-xs font-medium border border-outline-variant/30">Asparagus</span>
+<span class="px-2 py-1 bg-surface-container text-on-surface rounded text-xs font-medium border border-outline-variant/30">Lemon</span>
+</div>
+</td>
+<td class="py-4 px-6 align-top">
+<div class="flex flex-col space-y-2">
+<div class="flex items-center space-x-2">
+<span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container rounded-full font-label-sm text-label-sm flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-1">check_circle</span>
+                                                Success
+                                            </span>
+</div>
+<a class="text-primary hover:text-primary-fixed-dim font-medium truncate w-48 block transition-colors" href="#">Citrus Baked Salmon</a>
+</div>
+</td>
+<td class="py-4 px-6 align-top text-on-surface-variant">
+                                    Yesterday, 18:45<br/>
+<span class="text-outline text-xs">0.9s latency</span>
+</td>
+<td class="py-4 px-6 align-top">
+<button class="p-1.5 text-outline hover:text-primary rounded hover:bg-surface-container transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-sm">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Partial/Warning (Using surface-variant for warning tone) -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group cursor-pointer">
+<td class="py-4 px-6 align-top">
+<div class="flex items-center space-x-3">
+<img alt="User avatar" class="w-8 h-8 rounded-full border border-outline-variant" data-alt="A small, circular avatar image of a user's face, clear and professional, typical of a modern web application profile picture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjcpSVpKT_pkwiC1FooHwnH_1Y2uO-QIDFueIBkf_bzoQa_XH11ensz64M2yURNixfM7lRLfA-IRvRT8zHxk1y1vg08SAHygNLYbsA27d4s_idihn1KqHglCyjIVMij7vB34AueOUQzkWORTYlogLxbR_U23iOuaQvWEtoOj_mzDqa8SYTGgBrMfbwaTtpL9BC8NMN4xYk1-91zzAPe4E0DlRSy9CFGCPdYcw2lOzxamX-OMnMf0gJBS1OsTz6IkJumKO_WefleCfM"/>
+<div>
+<div class="font-medium text-on-surface">USR-5590</div>
+<div class="text-outline text-xs mt-0.5">REQ-T88L</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-6 align-top max-w-xs">
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-1 bg-surface-container text-on-surface rounded text-xs font-medium border border-outline-variant/30">Tofu</span>
+<span class="px-2 py-1 bg-surface-container text-on-surface rounded text-xs font-medium border border-outline-variant/30">Soy Sauce</span>
+<span class="px-2 py-1 bg-error-container/30 text-on-surface rounded text-xs font-medium border border-error/30 line-through">Expired Milk</span>
+</div>
+</td>
+<td class="py-4 px-6 align-top">
+<div class="flex flex-col space-y-2">
+<div class="flex items-center space-x-2">
+<span class="px-2 py-0.5 bg-surface-variant text-on-surface-variant rounded-full font-label-sm text-label-sm flex items-center">
+<span class="material-symbols-outlined text-[12px] mr-1">warning</span>
+                                                Substituted
+                                            </span>
+</div>
+<a class="text-primary hover:text-primary-fixed-dim font-medium truncate w-48 block transition-colors" href="#">Savory Tofu Scramble</a>
+<span class="text-outline text-xs truncate w-48 block">Ignored expired ingredient</span>
+</div>
+</td>
+<td class="py-4 px-6 align-top text-on-surface-variant">
+                                    Yesterday, 09:12<br/>
+<span class="text-outline text-xs">1.5s latency</span>
+</td>
+<td class="py-4 px-6 align-top">
+<button class="p-1.5 text-outline hover:text-primary rounded hover:bg-surface-container transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-sm">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="px-6 py-4 border-t border-slate-100 bg-surface-container-lowest flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Showing 1 to 4 of 2,104 logs</span>
+<div class="flex space-x-1">
+<button class="p-1 rounded hover:bg-surface-container text-outline transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="p-1 rounded bg-primary-container text-on-primary-container font-label-sm text-label-sm w-6 h-6 flex items-center justify-center">1</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface font-label-sm text-label-sm w-6 h-6 flex items-center justify-center transition-colors">2</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface font-label-sm text-label-sm w-6 h-6 flex items-center justify-center transition-colors">3</button>
+<button class="p-1 rounded hover:bg-surface-container text-outline transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

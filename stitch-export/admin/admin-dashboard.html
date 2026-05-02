@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SehatMok Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error-container": "#ffdad6",
+                      "surface-container-high": "#e2e8f8",
+                      "on-secondary-fixed": "#002117",
+                      "inverse-primary": "#4edea3",
+                      "surface-container-low": "#f0f3ff",
+                      "error": "#ba1a1a",
+                      "on-secondary": "#ffffff",
+                      "on-secondary-container": "#306d58",
+                      "surface": "#f9f9ff",
+                      "outline-variant": "#bbcabf",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-container": "#2d3c37",
+                      "on-secondary-fixed-variant": "#0b513d",
+                      "secondary-container": "#adedd3",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-dim": "#d3daea",
+                      "surface-tint": "#006c49",
+                      "secondary-fixed-dim": "#95d3ba",
+                      "inverse-on-surface": "#ebf1ff",
+                      "primary-fixed": "#6ffbbe",
+                      "background": "#f9f9ff",
+                      "on-primary-container": "#00422b",
+                      "tertiary": "#52625c",
+                      "on-primary-fixed": "#002113",
+                      "inverse-surface": "#2a313d",
+                      "surface-container-highest": "#dce2f3",
+                      "on-tertiary-fixed": "#101e1a",
+                      "primary": "#006c49",
+                      "tertiary-container": "#96a69f",
+                      "on-surface": "#151c27",
+                      "surface-variant": "#dce2f3",
+                      "primary-fixed-dim": "#4edea3",
+                      "primary-container": "#10b981",
+                      "on-tertiary-fixed-variant": "#3b4a44",
+                      "on-primary": "#ffffff",
+                      "tertiary-fixed-dim": "#bacac3",
+                      "surface-container": "#e7eefe",
+                      "on-error-container": "#93000a",
+                      "outline": "#6c7a71",
+                      "on-surface-variant": "#3c4a42",
+                      "surface-bright": "#f9f9ff",
+                      "secondary-fixed": "#b0f0d6",
+                      "on-background": "#151c27",
+                      "on-primary-fixed-variant": "#005236",
+                      "secondary": "#2b6954",
+                      "on-error": "#ffffff",
+                      "tertiary-fixed": "#d5e6df"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "8px",
+                      "xl": "48px",
+                      "md": "16px",
+                      "gutter": "24px",
+                      "xs": "4px",
+                      "sm": "8px",
+                      "lg": "24px",
+                      "margin": "32px"
+              },
+              "fontFamily": {
+                      "body-sm": ["Manrope"],
+                      "body-md": ["Manrope"],
+                      "label-sm": ["Manrope"],
+                      "body-lg": ["Manrope"],
+                      "label-md": ["Manrope"],
+                      "h2": ["Manrope"],
+                      "h3": ["Manrope"],
+                      "h1": ["Manrope"]
+              },
+              "fontSize": {
+                      "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-sm": ["11px", {"lineHeight": "1", "fontWeight": "500"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "h2": ["28px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "h3": ["22px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                      "h1": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-64 border-r border-slate-100 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 flex flex-col p-4 space-y-2 h-full z-50 hidden md:flex">
+<div class="mb-8 px-4">
+<h1 class="text-lg font-extrabold text-emerald-800 dark:text-emerald-400 font-h2 text-h2 mb-1">SehatMok</h1>
+<p class="font-label-sm text-label-sm text-slate-500">Admin Console</p>
+</div>
+<a class="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-semibold rounded-lg flex items-center px-4 py-3 gap-3 scale-98 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 flex items-center px-4 py-3 gap-3 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body-md text-body-md">User Management</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 flex items-center px-4 py-3 gap-3 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-body-md text-body-md">Recipe Management</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 flex items-center px-4 py-3 gap-3 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">kitchen</span>
+<span class="font-body-md text-body-md">Fridge Monitoring</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 flex items-center px-4 py-3 gap-3 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">format_list_bulleted</span>
+<span class="font-body-md text-body-md">Ingredients</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 flex items-center px-4 py-3 gap-3 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="font-body-md text-body-md">AI Recipe Logs</span>
+</a>
+<a class="text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 flex items-center px-4 py-3 gap-3 rounded-lg transition-colors mt-auto" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col min-w-0 lg:ml-64">
+<!-- TopNavBar -->
+<header class="docked full-width top-0 z-40 border-b border-slate-100 dark:border-slate-800 shadow-[0px_1px_2px_rgba(0,0,0,0.03)] bg-white dark:bg-slate-900 flex items-center justify-between px-6 h-16 w-full sticky">
+<div class="flex items-center gap-4">
+<div class="md:hidden">
+<span class="text-xl font-bold text-emerald-700 dark:text-emerald-500 font-h3 text-h3">SehatMok</span>
+</div>
+<div class="hidden md:flex items-center bg-surface-container-low rounded-full px-4 py-2 border border-outline-variant focus-within:border-primary-container transition-colors">
+<span class="material-symbols-outlined text-outline mr-2 text-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm font-body-sm text-on-surface placeholder:text-outline w-64" placeholder="Search admin console..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors p-2 rounded-full hidden sm:block">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors p-2 rounded-full hidden sm:block">
+<span class="material-symbols-outlined">apps</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary ml-2 overflow-hidden border border-outline-variant">
+<img alt="Administrator Profile" class="h-full w-full object-cover" data-alt="A professional headshot of a person looking directly at the camera. The image has a clean, modern aesthetic with soft, high-key lighting suitable for a professional avatar in a wellness or medical dashboard. The background is a subtle, neutral tone that does not distract from the subject." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFGoKA7s6cRhNAy93g3-FbRCjVvxzEb7YvJuPIc_VqFZPRxMbUVCtX4HlXRQNDZXgUZw10XvLVdSYYFvEbaDeoRHri2oUkMImG5x9FPivIOE1be6UQC__OX252R-QjgHnHmikNjE9ywihy11xtCARrUZNO6_Oe5rNc6SNGkieVD5iiyq8ld0qhSXWqClpE6jEa6E3KPCrGNNhegZ4o61ZIxHtV7I9_7fUg-O2UT_2ghBLRFqD7GlKIaaVggmJXle-Gha59qDs3N8Ib"/>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 p-gutter overflow-y-auto">
+<!-- Header -->
+<div class="mb-xl">
+<h2 class="font-h1 text-h1 text-on-surface mb-2">Dashboard Overview</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Welcome back. Here is the latest clinical data and platform activity.</p>
+</div>
+<!-- Bento Grid Main Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter">
+<!-- Left/Main Column (KPIs & Charts) -->
+<div class="xl:col-span-8 flex flex-col gap-gutter">
+<!-- KPI Cards Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- KPI 1 -->
+<div class="bg-white rounded-xl p-lg shadow-[0px_10px_25px_rgba(0,0,0,0.03)] flex flex-col justify-between h-full border border-slate-50">
+<div class="flex justify-between items-start mb-4">
+<div class="h-10 w-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">group</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> 12%
+                                </span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-outline uppercase tracking-wider mb-1">Total Users</p>
+<p class="font-h2 text-h2 text-on-surface">24,592</p>
+</div>
+</div>
+<!-- KPI 2 -->
+<div class="bg-white rounded-xl p-lg shadow-[0px_10px_25px_rgba(0,0,0,0.03)] flex flex-col justify-between h-full border border-slate-50">
+<div class="flex justify-between items-start mb-4">
+<div class="h-10 w-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">how_to_reg</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> 5.2%
+                                </span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-outline uppercase tracking-wider mb-1">Active Users</p>
+<p class="font-h2 text-h2 text-on-surface">8,140</p>
+</div>
+</div>
+<!-- KPI 3 -->
+<div class="bg-white rounded-xl p-lg shadow-[0px_10px_25px_rgba(0,0,0,0.03)] flex flex-col justify-between h-full border border-slate-50">
+<div class="flex justify-between items-start mb-4">
+<div class="h-10 w-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">restaurant</span>
+</div>
+<span class="bg-error-container text-on-error-container font-label-sm text-label-sm px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_down</span> 1.4%
+                                </span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-outline uppercase tracking-wider mb-1">Recipes Gen</p>
+<p class="font-h2 text-h2 text-on-surface">142,050</p>
+</div>
+</div>
+<!-- KPI 4 -->
+<div class="bg-primary text-on-primary rounded-xl p-lg shadow-[0px_10px_25px_rgba(0,0,0,0.08)] flex flex-col justify-between h-full relative overflow-hidden">
+<div class="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
+<span class="material-symbols-outlined text-[120px]">kitchen</span>
+</div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<div class="h-10 w-10 rounded-lg bg-white/20 flex items-center justify-center text-white backdrop-blur-sm">
+<span class="material-symbols-outlined">kitchen</span>
+</div>
+</div>
+<div class="relative z-10">
+<p class="font-label-md text-label-md text-white/80 uppercase tracking-wider mb-1">Total Fridge Items</p>
+<p class="font-h2 text-h2 text-white">892K</p>
+</div>
+</div>
+</div>
+<!-- Secondary KPIs -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-white rounded-xl px-lg py-md shadow-[0px_10px_25px_rgba(0,0,0,0.03)] flex items-center gap-4 border border-slate-50">
+<div class="h-12 w-12 rounded-full bg-surface-container-high flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined">bookmark</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-outline uppercase tracking-wider">Bookmarked</p>
+<p class="font-h3 text-h3 text-on-surface">45,210</p>
+</div>
+</div>
+<div class="bg-white rounded-xl px-lg py-md shadow-[0px_10px_25px_rgba(0,0,0,0.03)] flex items-center gap-4 border border-slate-50">
+<div class="h-12 w-12 rounded-full bg-surface-container-high flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined">history</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-outline uppercase tracking-wider">Recipe History</p>
+<p class="font-h3 text-h3 text-on-surface">1.2M</p>
+</div>
+</div>
+<div class="bg-white rounded-xl px-lg py-md shadow-[0px_10px_25px_rgba(0,0,0,0.03)] flex items-center gap-4 border border-slate-50">
+<div class="h-12 w-12 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined">today</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-outline uppercase tracking-wider">Created Today</p>
+<p class="font-h3 text-h3 text-on-surface">1,402</p>
+</div>
+</div>
+</div>
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<!-- Chart 1: DAU -->
+<div class="bg-white rounded-xl p-lg shadow-[0px_10px_25px_rgba(0,0,0,0.03)] border border-slate-50 flex flex-col h-96">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h3 class="font-h3 text-h3 text-on-surface">Daily Active Users</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Last 7 days engagement</p>
+</div>
+<button class="p-2 text-outline hover:bg-surface-container rounded-lg transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<!-- Pseudo Bar Chart -->
+<div class="flex-1 flex items-end justify-between gap-2 pt-4 border-b border-surface-variant pb-2 relative">
+<!-- Y Axis Labels -->
+<div class="absolute left-0 top-0 h-full flex flex-col justify-between text-label-sm text-outline pb-2 -ml-2">
+<span>10k</span>
+<span>5k</span>
+<span>0</span>
+</div>
+<div class="w-full flex justify-between items-end h-full pl-8">
+<div class="w-1/8 bg-surface-container-highest rounded-t-sm h-[40%] hover:bg-primary transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">4.2k</div>
+</div>
+<div class="w-1/8 bg-surface-container-highest rounded-t-sm h-[60%] hover:bg-primary transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">6.1k</div>
+</div>
+<div class="w-1/8 bg-primary rounded-t-sm h-[85%] relative group shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">8.5k</div>
+</div>
+<div class="w-1/8 bg-surface-container-highest rounded-t-sm h-[70%] hover:bg-primary transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">7.0k</div>
+</div>
+<div class="w-1/8 bg-surface-container-highest rounded-t-sm h-[55%] hover:bg-primary transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">5.5k</div>
+</div>
+<div class="w-1/8 bg-surface-container-highest rounded-t-sm h-[45%] hover:bg-primary transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">4.5k</div>
+</div>
+<div class="w-1/8 bg-surface-container-highest rounded-t-sm h-[65%] hover:bg-primary transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface font-label-sm px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">6.5k</div>
+</div>
+</div>
+</div>
+<div class="flex justify-between pl-8 pt-2 font-label-sm text-outline">
+<span>Mon</span>
+<span>Tue</span>
+<span>Wed</span>
+<span>Thu</span>
+<span>Fri</span>
+<span>Sat</span>
+<span>Sun</span>
+</div>
+</div>
+<!-- Chart 2: Recipes Gen -->
+<div class="bg-white rounded-xl p-lg shadow-[0px_10px_25px_rgba(0,0,0,0.03)] border border-slate-50 flex flex-col h-96 relative overflow-hidden">
+<div class="flex justify-between items-center mb-6 relative z-10">
+<div>
+<h3 class="font-h3 text-h3 text-on-surface">Recipes Generated</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Daily volume trend</p>
+</div>
+<div class="flex gap-2">
+<span class="bg-surface-container font-label-md text-label-md px-3 py-1 rounded-full text-on-surface-variant cursor-pointer">7D</span>
+<span class="bg-transparent font-label-md text-label-md px-3 py-1 rounded-full text-outline hover:bg-surface-container transition-colors cursor-pointer">30D</span>
+</div>
+</div>
+<!-- Pseudo Line Chart with Gradient Fill -->
+<div class="flex-1 relative w-full h-full mt-4">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<defs>
+<lineargradient id="gradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#10b981" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#10b981" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<!-- Area Fill -->
+<path d="M0,80 Q15,60 30,70 T60,40 T90,20 L100,20 L100,100 L0,100 Z" fill="url(#gradient)"></path>
+<!-- Line -->
+<path d="M0,80 Q15,60 30,70 T60,40 T90,20 L100,20" fill="none" stroke="#006c49" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<!-- Data Points -->
+<circle cx="30" cy="70" fill="#ffffff" r="2" stroke="#006c49" stroke-width="1"></circle>
+<circle cx="60" cy="40" fill="#ffffff" r="2" stroke="#006c49" stroke-width="1"></circle>
+<circle cx="90" cy="20" fill="#ffffff" r="2" stroke="#006c49" stroke-width="1"></circle>
+</svg>
+<!-- Grid Lines Overlay -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+<div class="border-t border-surface-variant w-full h-0"></div>
+<div class="border-t border-surface-variant w-full h-0"></div>
+<div class="border-t border-surface-variant w-full h-0"></div>
+<div class="border-t border-surface-variant w-full h-0"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column (Highlight Cards) -->
+<div class="xl:col-span-4 flex flex-col gap-gutter">
+<!-- Top 3 Active Users -->
+<div class="bg-white rounded-xl p-lg shadow-[0px_10px_25px_rgba(0,0,0,0.03)] border border-slate-50">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-h3 text-h3 text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">military_tech</span> Top Active Users
+                            </h3>
+<button class="text-primary font-label-md text-label-md uppercase hover:underline">View All</button>
+</div>
+<div class="flex flex-col gap-4">
+<!-- User 1 -->
+<div class="flex items-center gap-4 p-3 rounded-lg hover:bg-surface-container-lowest transition-colors group">
+<div class="relative">
+<div class="h-10 w-10 rounded-full bg-surface-container overflow-hidden">
+<img alt="User Avatar" class="h-full w-full object-cover" data-alt="A bright, clear headshot of a young woman smiling. The lighting is soft and modern, suitable for a clean, minimalist UI avatar. The background is slightly blurred to focus on the subject, fitting an active wellness brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoOjIhiryJ9zl38jJ2XEE0_GfBaTnzfNJl94Ok29HwWFIaCwC-IZgznVFlEaAbNtmsphp8cwvRqyILH-ZceBHH2VKQrhKr9wfgnli_O7o4Pi_KXjLzsbuKj8lYf05h3wLizaBtlPsngH9GaN4QbNmAiByI7ErQ0B_BAuWFpbOcVpV9muI3NhchE2U_0cFZEwGLQGjD9O2rnhW4eMv66GkPka8mOXvyY_sDVHBwN7dHiA2ISfPWM1nvRWYCjN7d65qAsbU9wm1qVDaz"/>
+</div>
+<div class="absolute -top-1 -right-1 h-5 w-5 bg-amber-400 rounded-full flex items-center justify-center text-white font-label-sm text-[10px] border-2 border-white shadow-sm">1</div>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md font-semibold text-on-surface">Sarah Jenkins</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">142 logins this week</p>
+</div>
+<div class="text-right">
+<p class="font-label-md text-label-md text-primary">98%</p>
+<p class="font-label-sm text-label-sm text-outline">Engagement</p>
+</div>
+</div>
+<hr class="border-t border-surface-variant/50"/>
+<!-- User 2 -->
+<div class="flex items-center gap-4 p-3 rounded-lg hover:bg-surface-container-lowest transition-colors">
+<div class="relative">
+<div class="h-10 w-10 rounded-full bg-surface-container overflow-hidden">
+<img alt="User Avatar" class="h-full w-full object-cover" data-alt="A professional, modern headshot of a man with a neat beard. The image is bright and airy, perfectly suited for a high-end medical or wellness dashboard avatar. The neutral background enhances the minimalist aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcA7iQftelmYv5j8pHJ4QT1UBBBfIJ9EMMCyNKavJH8eCANeuTRI2shY2VaEhj87c2zz4xAFjpJONFUGFxCZqE93ovPhk4coG3uA7pdDZH54gTTTx-VLq-db_BTa-JUdKXK8IvMn_-dqXLFqQA6hizjwMBM0TsIoPzkJG6S945Fd77EU8yxZ0EnvXlnkoyq2w2C6Y8eQHPof0DoXBy7cOiK4_p11jwJRnwzdQl69FMs8zMEu69JdhUUZxpZ1LaSXGakxTagrTh3Rok"/>
+</div>
+<div class="absolute -top-1 -right-1 h-5 w-5 bg-slate-300 rounded-full flex items-center justify-center text-slate-700 font-label-sm text-[10px] border-2 border-white shadow-sm">2</div>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md font-semibold text-on-surface">Michael Chen</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">118 logins this week</p>
+</div>
+<div class="text-right">
+<p class="font-label-md text-label-md text-primary">92%</p>
+</div>
+</div>
+<hr class="border-t border-surface-variant/50"/>
+<!-- User 3 -->
+<div class="flex items-center gap-4 p-3 rounded-lg hover:bg-surface-container-lowest transition-colors">
+<div class="relative">
+<div class="h-10 w-10 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full w-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center font-body-md font-bold">
+                                            EJ
+                                        </div>
+</div>
+<div class="absolute -top-1 -right-1 h-5 w-5 bg-amber-700 rounded-full flex items-center justify-center text-white font-label-sm text-[10px] border-2 border-white shadow-sm">3</div>
+</div>
+<div class="flex-1">
+<p class="font-body-md text-body-md font-semibold text-on-surface">Emma Johnson</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">95 logins this week</p>
+</div>
+<div class="text-right">
+<p class="font-label-md text-label-md text-primary">88%</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Top 3 Bookmarked Recipes -->
+<div class="bg-white rounded-xl p-lg shadow-[0px_10px_25px_rgba(0,0,0,0.03)] border border-slate-50">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-h3 text-h3 text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">bookmark_star</span> Trending Recipes
+                            </h3>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Recipe 1 -->
+<div class="flex gap-4 items-center">
+<div class="h-16 w-16 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="Recipe Image" class="h-full w-full object-cover" data-alt="A vibrant, overhead shot of a healthy green salad bowl containing avocado, quinoa, and fresh greens. The lighting is bright and natural, creating a fresh, clinical yet appetizing look that perfectly aligns with a modern wellness platform. The composition is clean and minimalist." src="https://lh3.googleusercontent.com/aida-public/AB6AXuActJzlGFp5bAJVejjZZXM-TU3N9SnZESYdtn6bmkq6y71-UjrvMkOWwW4SQdl3v5jr6fdSyZA0PbxZrGwth9QcP3dhhKOtNbjg3TI4IdAcjqtORjM6Dk_Zy4SS8ePfM3I2SmyKS0ElWhIN72J166uJ3JSNaCiV4oCv4umFulQwU5Hl0kyU0mMKHdmYuPMIbJTNwVsK_irY_ViAltbeOCJOFurxzVjh5-MaT9gRlL86k53Z1Sqn5k9bOSmwyXcFine9bxA6GpaWSmrg"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-md text-body-md font-semibold text-on-surface truncate">Quinoa Power Bowl</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="bg-surface-container font-label-sm text-label-sm px-2 py-0.5 rounded text-on-surface-variant">Vegan</span>
+<span class="text-outline font-body-sm text-body-sm flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">favorite</span> 12.4k</span>
+</div>
+</div>
+</div>
+<!-- Recipe 2 -->
+<div class="flex gap-4 items-center">
+<div class="h-16 w-16 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="Recipe Image" class="h-full w-full object-cover" data-alt="A clean, appetizing close-up of grilled salmon with steamed asparagus on a pristine white plate. The lighting is studio-quality, emphasizing the fresh textures and healthy nature of the meal. The background is a crisp, bright white to maintain the clinical precision aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDw2nZrez-9jqvBoxK2BxeJNgR96C2_aBEeQiLswTBsDaksFuZwqZ7lJmL7UKIB2RZHpr9jFK2UgMmN5mZtGLVFldG3cqh2YCRqkYq7P1FMlyL0x_P0TTOBqlD5EpOW2wEXbOyhGgUQ25VSvAH-MBvzLCi3agAe7NX_xtajUxB4GJOTQmc0jeMWvZPHuFIuoGpF3Oo4rGUyyUkWURjAgMHsEiSIX1JJ1NkyR83-Yrzk7Yyzho9QC5vvoPrduqTt5D9D-ESPtYsSgj1l"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-md text-body-md font-semibold text-on-surface truncate">Lemon Herb Salmon</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="bg-surface-container font-label-sm text-label-sm px-2 py-0.5 rounded text-on-surface-variant">Keto</span>
+<span class="text-outline font-body-sm text-body-sm flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">favorite</span> 9.8k</span>
+</div>
+</div>
+</div>
+<!-- Recipe 3 -->
+<div class="flex gap-4 items-center">
+<div class="h-16 w-16 rounded-lg overflow-hidden flex-shrink-0">
+<img alt="Recipe Image" class="h-full w-full object-cover" data-alt="A beautifully plated serving of overnight oats topped with fresh berries and chia seeds. The image is taken from a top-down perspective on a light, neutral marble surface. The lighting is soft and morning-fresh, echoing a modern, health-conscious lifestyle brand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYw_pJ4ukS0PjMBmjQC17slhCA-VRNeOAGJzry3QL4RlR39CGcvoZYsTD5UiIdXoKWBkp_xx9zGnJg-cJWpybjUeMWAwgR2g3pr4C9gdmQp2PxleF1suypyo1Jyk2qR-Vk30E7i_4pTHIoAx8e46r6ghuOoTOtcJecaX1jmGN01Z51t0suMhdEcUZOifJLNj0KiO3m1vUPTE4S-Ah5-yii4gL_ZvHsmJ2FuEvEjT2JkuhgJTwTaiwk26dCisEFJynmA2A0S3jw8reL"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-md text-body-md font-semibold text-on-surface truncate">Berry Chia Oats</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="bg-surface-container font-label-sm text-label-sm px-2 py-0.5 rounded text-on-surface-variant">Breakfast</span>
+<span class="text-outline font-body-sm text-body-sm flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">favorite</span> 8.2k</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Top 3 Used Ingredients -->
+<div class="bg-surface-container-low rounded-xl p-lg border border-surface-variant/50">
+<h3 class="font-h3 text-h3 text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">eco</span> Most Logged Ingredients
+                        </h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="text-on-surface font-medium">Chicken Breast</span>
+<span class="text-outline">45k logs</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5">
+<div class="bg-primary h-1.5 rounded-full" style="width: 85%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="text-on-surface font-medium">Spinach</span>
+<span class="text-outline">38k logs</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5">
+<div class="bg-secondary h-1.5 rounded-full" style="width: 70%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm font-body-sm mb-1">
+<span class="text-on-surface font-medium">Eggs</span>
+<span class="text-outline">32k logs</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5">
+<div class="bg-tertiary h-1.5 rounded-full" style="width: 55%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

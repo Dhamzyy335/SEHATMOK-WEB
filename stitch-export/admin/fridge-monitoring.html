@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Fridge Monitoring - SehatMok</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#e2e8f8",
+                        "on-secondary-fixed": "#002117",
+                        "inverse-primary": "#4edea3",
+                        "surface-container-low": "#f0f3ff",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#306d58",
+                        "surface": "#f9f9ff",
+                        "outline-variant": "#bbcabf",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-container": "#2d3c37",
+                        "on-secondary-fixed-variant": "#0b513d",
+                        "secondary-container": "#adedd3",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#d3daea",
+                        "surface-tint": "#006c49",
+                        "secondary-fixed-dim": "#95d3ba",
+                        "inverse-on-surface": "#ebf1ff",
+                        "primary-fixed": "#6ffbbe",
+                        "background": "#f9f9ff",
+                        "on-primary-container": "#00422b",
+                        "tertiary": "#52625c",
+                        "on-primary-fixed": "#002113",
+                        "inverse-surface": "#2a313d",
+                        "surface-container-highest": "#dce2f3",
+                        "on-tertiary-fixed": "#101e1a",
+                        "primary": "#006c49",
+                        "tertiary-container": "#96a69f",
+                        "on-surface": "#151c27",
+                        "surface-variant": "#dce2f3",
+                        "primary-fixed-dim": "#4edea3",
+                        "primary-container": "#10b981",
+                        "on-tertiary-fixed-variant": "#3b4a44",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed-dim": "#bacac3",
+                        "surface-container": "#e7eefe",
+                        "on-error-container": "#93000a",
+                        "outline": "#6c7a71",
+                        "on-surface-variant": "#3c4a42",
+                        "surface-bright": "#f9f9ff",
+                        "secondary-fixed": "#b0f0d6",
+                        "on-background": "#151c27",
+                        "on-primary-fixed-variant": "#005236",
+                        "secondary": "#2b6954",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed": "#d5e6df"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "gutter": "24px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "margin": "32px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Manrope"],
+                        "body-md": ["Manrope"],
+                        "label-sm": ["Manrope"],
+                        "body-lg": ["Manrope"],
+                        "label-md": ["Manrope"],
+                        "h2": ["Manrope"],
+                        "h3": ["Manrope"],
+                        "h1": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "1", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "h2": ["28px", { "lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "h3": ["22px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "h1": ["36px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; background-color: #f9f9ff; }
+        .ambient-shadow { box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.03); }
+        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+    </style>
+</head>
+<body class="bg-background text-on-background flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col p-4 space-y-2 h-full fixed left-0 top-0 h-screen w-64 border-r border-slate-100 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 z-50">
+<div class="flex items-center gap-3 px-2 mb-8 mt-2">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined font-bold text-xl" data-icon="health_and_safety">health_and_safety</span>
+</div>
+<div>
+<h1 class="text-lg font-extrabold text-emerald-800 dark:text-emerald-400 font-h3 text-h3 tracking-tight">SehatMok</h1>
+<p class="font-label-sm text-label-sm text-slate-500 uppercase tracking-wider">Admin Console</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+                User Management
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+                Recipe Management
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-semibold rounded-lg font-manrope text-sm tracking-wide transition-transform scale-98 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="kitchen" data-weight="fill" style="font-variation-settings: 'FILL' 1;">kitchen</span>
+                Fridge Monitoring
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="format_list_bulleted">format_list_bulleted</span>
+                Ingredients
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+                AI Recipe Logs
+            </a>
+</nav>
+<div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-emerald-600 dark:hover:text-emerald-300 font-manrope text-sm tracking-wide transition-colors scale-98 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                Settings
+            </a>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col md:pl-64 h-screen">
+<!-- TopNavBar -->
+<header class="flex items-center justify-between px-6 h-16 w-full docked full-width top-0 z-40 border-b border-slate-100 dark:border-slate-800 shadow-[0px_1px_2px_rgba(0,0,0,0.03)] bg-white dark:bg-slate-900">
+<div class="flex items-center gap-4 flex-1">
+<div class="md:hidden flex items-center gap-2">
+<span class="material-symbols-outlined font-bold text-xl text-emerald-700 dark:text-emerald-500" data-icon="health_and_safety">health_and_safety</span>
+<span class="text-xl font-bold text-emerald-700 dark:text-emerald-500 font-h3 text-h3">SehatMok</span>
+</div>
+<div class="hidden md:flex relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-full font-body-sm text-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" placeholder="Search items, categories, or users..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-2 md:gap-4">
+<button class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors Active: opacity-80 duration-150">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors Active: opacity-80 duration-150 hidden sm:block">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors Active: opacity-80 duration-150 hidden sm:block">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden border border-outline-variant ml-2">
+<img alt="Administrator Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9-Lfag3P3DHgJvtyg_DLOP_CfcMgh3V1CfPaYE7Ul3y_zlZlwlbi4UfFP3mbzrpyoIO0UZTkelfopKYYWoIGxcangrMvrDOoKS0TCemegzv6KG1ZWewAhlEmneW01444I7dcGkri7rDuoGOjwBJTS_ox-yHJpQUiC9wchxuWS5Qn0dWuDFik2thC9YMs3c7rj42bO9Rj7d5CNZWUAgIuwI-Nc3yXJg4LS5vwGQBaWExu6zAyN-hAnRUe7SA4XQzkr9lgfiMPet7Nv"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto p-4 md:p-lg xl:p-xl bg-surface">
+<div class="max-w-7xl mx-auto space-y-lg">
+<!-- Page Header & Controls -->
+<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface">Fridge Monitoring</h1>
+<p class="font-body-md text-body-md text-tertiary mt-1">Track community ingredient freshness and usage patterns.</p>
+</div>
+<div class="flex items-center gap-3 glass-panel px-4 py-2 rounded-full ambient-shadow">
+<span class="font-label-md text-label-md text-on-surface-variant">Expiring in &lt; 2 Days</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-error"></div>
+</label>
+</div>
+</div>
+<!-- Bento Grid Overview -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Metric 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-lg ambient-shadow border border-surface-variant">
+<div class="flex items-start justify-between">
+<div>
+<p class="font-label-sm text-label-sm text-tertiary uppercase tracking-wider">Critical Items</p>
+<h2 class="font-h2 text-h2 text-error mt-2">1,248</h2>
+</div>
+<div class="w-10 h-10 rounded-full bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="trending_up">trending_up</span>
+                            +12% from last week
+                        </p>
+</div>
+<!-- Metric 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-lg ambient-shadow border border-surface-variant">
+<div class="flex items-start justify-between">
+<div>
+<p class="font-label-sm text-label-sm text-tertiary uppercase tracking-wider">Most Tracked</p>
+<h2 class="font-h2 text-h2 text-primary mt-2">Milk</h2>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="local_drink">local_drink</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-4 flex items-center gap-1">
+                            In 42k+ fridges globally
+                        </p>
+</div>
+<!-- Metric 3 -->
+</div>
+<!-- Data Table Section -->
+<div class="bg-surface-container-lowest rounded-xl ambient-shadow border border-surface-variant overflow-hidden">
+<div class="p-4 border-b border-surface-variant flex justify-between items-center bg-surface/50">
+<h3 class="font-h3 text-h3 text-on-surface">Global Inventory Status</h3>
+<button class="font-label-md text-label-md text-primary flex items-center gap-1 hover:text-primary-container transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+                            Export Data
+                        </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-surface-variant">
+<th class="p-4 font-label-md text-label-md text-tertiary font-semibold w-1/3">Item Name</th>
+<th class="p-4 font-label-md text-label-md text-tertiary font-semibold">Category</th>
+<th class="p-4 font-label-md text-label-md text-tertiary font-semibold text-right">Users Owning</th>
+<th class="p-4 font-label-md text-label-md text-tertiary font-semibold">Avg Expiry</th>
+<th class="p-4 font-label-md text-label-md text-tertiary font-semibold text-center">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-variant font-body-sm text-body-sm text-on-surface">
+<tr class="hover:bg-surface-container/30 transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-lg" data-icon="egg">egg</span>
+</div>
+<span class="font-medium">Organic Eggs</span>
+</div>
+</td>
+<td class="p-4 text-on-surface-variant">Dairy &amp; Eggs</td>
+<td class="p-4 text-right font-medium">34,291</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-container text-error font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="timer">timer</span>
+                                            &lt; 24 Hours
+                                        </span>
+</td>
+<td class="p-4 text-center">
+<span class="inline-block px-2 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm uppercase">Frequent</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container/30 transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-lg" data-icon="local_drink">local_drink</span>
+</div>
+<span class="font-medium">Whole Milk</span>
+</div>
+</td>
+<td class="p-4 text-on-surface-variant">Dairy &amp; Eggs</td>
+<td class="p-4 text-right font-medium">42,105</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-container text-error font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="timer">timer</span>
+                                            1.5 Days
+                                        </span>
+</td>
+<td class="p-4 text-center">
+<span class="inline-block px-2 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm uppercase">Frequent</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container/30 transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-lg" data-icon="set_meal">set_meal</span>
+</div>
+<span class="font-medium">Fresh Salmon</span>
+</div>
+</td>
+<td class="p-4 text-on-surface-variant">Meat &amp; Seafood</td>
+<td class="p-4 text-right font-medium">12,840</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-container text-error font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="timer">timer</span>
+                                            &lt; 12 Hours
+                                        </span>
+</td>
+<td class="p-4 text-center">
+<span class="inline-block px-2 py-1 rounded-full bg-surface-variant text-on-surface-variant font-label-sm text-label-sm uppercase">Standard</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container/30 transition-colors">
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-lg" data-icon="eco">eco</span>
+</div>
+<span class="font-medium">Spinach Leaves</span>
+</div>
+</td>
+<td class="p-4 text-on-surface-variant">Produce</td>
+<td class="p-4 text-right font-medium">28,550</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-variant text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span>
+                                            4 Days
+                                        </span>
+</td>
+<td class="p-4 text-center">
+<span class="inline-block px-2 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm uppercase">Frequent</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
