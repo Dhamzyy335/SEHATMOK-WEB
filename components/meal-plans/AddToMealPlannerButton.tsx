@@ -12,10 +12,11 @@ type ToastState = {
 };
 
 type AddToMealPlannerButtonProps = {
-  recipeId: string;
+  recipeId?: string;
   recipeName?: string;
   variant?: "button" | "compact";
   className?: string;
+  resolveRecipeId?: () => Promise<string>;
 };
 
 const mealSlots: Array<{ value: MealSlot; label: string; icon: string }> = [
@@ -39,6 +40,7 @@ export default function AddToMealPlannerButton({
   recipeName,
   variant = "button",
   className,
+  resolveRecipeId,
 }: AddToMealPlannerButtonProps) {
   const router = useRouter();
   const titleId = useId();
@@ -101,6 +103,11 @@ export default function AddToMealPlannerButton({
 
     try {
       setSavingSlot(slot);
+      const resolvedRecipeId = recipeId ?? (await resolveRecipeId?.());
+
+      if (!resolvedRecipeId) {
+        throw new Error("Recipe id is required.");
+      }
 
       const response = await fetch("/api/meal-plans", {
         method: "POST",
@@ -108,7 +115,7 @@ export default function AddToMealPlannerButton({
         body: JSON.stringify({
           date: selectedDate,
           slot,
-          recipeId,
+          recipeId: resolvedRecipeId,
         }),
       });
 
@@ -243,7 +250,7 @@ export default function AddToMealPlannerButton({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        disabled={!recipeId || isSaving}
+        disabled={(!recipeId && !resolveRecipeId) || isSaving}
         aria-label={`Add ${displayRecipeName} to Meal Planner`}
         className={joinClassNames(buttonClassName, className)}
       >

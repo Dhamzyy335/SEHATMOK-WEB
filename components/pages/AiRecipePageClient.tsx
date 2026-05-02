@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import TopAppBar from "@/components/TopAppBar";
+import AddToMealPlannerButton from "@/components/meal-plans/AddToMealPlannerButton";
 
 type FridgeItemOption = {
   id: string;
@@ -504,18 +505,8 @@ export default function AiRecipePageClient() {
     setHasGenerated(false);
   };
 
-  const handleChooseCandidate = async (
-    candidate: AiRecipeCandidate,
-    candidateIndex: number,
-  ) => {
-    if (isSavingCandidateIndex !== null) {
-      return;
-    }
-
-    setIsSavingCandidateIndex(candidateIndex);
-    setErrorMessage(null);
-
-    try {
+  const saveCandidateToRecipeId = useCallback(
+    async (candidate: AiRecipeCandidate) => {
       const response = await fetch("/api/ai/save-recipe", {
         method: "POST",
         headers: {
@@ -526,7 +517,7 @@ export default function AiRecipePageClient() {
 
       if (response.status === 401) {
         router.replace("/login");
-        return;
+        throw new Error("Unauthorized.");
       }
 
       const result = (await response.json().catch(() => ({}))) as
@@ -541,7 +532,25 @@ export default function AiRecipePageClient() {
         throw new Error("Recipe saved but no ID returned.");
       }
 
-      router.push(`/recipes/${result.recipeId}?from=ai-recipe`);
+      return result.recipeId;
+    },
+    [router],
+  );
+
+  const handleChooseCandidate = async (
+    candidate: AiRecipeCandidate,
+    candidateIndex: number,
+  ) => {
+    if (isSavingCandidateIndex !== null) {
+      return;
+    }
+
+    setIsSavingCandidateIndex(candidateIndex);
+    setErrorMessage(null);
+
+    try {
+      const recipeId = await saveCandidateToRecipeId(candidate);
+      router.push(`/recipes/${recipeId}?from=ai-recipe`);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Failed to save recipe.",
@@ -952,31 +961,47 @@ export default function AiRecipePageClient() {
                 ) : null}
                 <div className="border-t border-outline-variant/10 pt-4">
                   {hasAiCandidates ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (featuredCandidate) {
-                          void handleChooseCandidate(featuredCandidate, 0);
-                        }
-                      }}
-                      disabled={isSavingCandidateIndex !== null}
-                      className="flex w-full items-center justify-center gap-2 text-sm font-bold text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isSavingCandidateIndex === 0 ? "Opening..." : "View Full Recipe"}
-                      <span className="material-symbols-outlined text-sm">
-                        arrow_forward
-                      </span>
-                    </button>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (featuredCandidate) {
+                            void handleChooseCandidate(featuredCandidate, 0);
+                          }
+                        }}
+                        disabled={isSavingCandidateIndex !== null}
+                        className="flex w-full items-center justify-center gap-2 rounded-full border border-primary/20 px-4 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary-container/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSavingCandidateIndex === 0 ? "Opening..." : "View Full Recipe"}
+                        <span className="material-symbols-outlined text-sm">
+                          arrow_forward
+                        </span>
+                      </button>
+                      {featuredCandidate ? (
+                        <AddToMealPlannerButton
+                          recipeName={featuredCandidate.name}
+                          resolveRecipeId={() => saveCandidateToRecipeId(featuredCandidate)}
+                          className="w-full py-2"
+                        />
+                      ) : null}
+                    </div>
                   ) : featuredRecipe ? (
-                    <Link
-                      href={`/recipes/${featuredRecipe.id}?from=ai-recipe`}
-                      className="flex w-full items-center justify-center gap-2 text-sm font-bold text-primary hover:underline"
-                    >
-                      View Full Recipe
-                      <span className="material-symbols-outlined text-sm">
-                        arrow_forward
-                      </span>
-                    </Link>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Link
+                        href={`/recipes/${featuredRecipe.id}?from=ai-recipe`}
+                        className="flex w-full items-center justify-center gap-2 rounded-full border border-primary/20 px-4 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary-container/10"
+                      >
+                        View Full Recipe
+                        <span className="material-symbols-outlined text-sm">
+                          arrow_forward
+                        </span>
+                      </Link>
+                      <AddToMealPlannerButton
+                        recipeId={featuredRecipe.id}
+                        recipeName={featuredRecipe.name}
+                        className="w-full py-2"
+                      />
+                    </div>
                   ) : (
                     <span className="block text-center text-sm font-bold text-on-surface-variant">
                       {isLoadingInitialRecommendations
@@ -1035,16 +1060,23 @@ export default function AiRecipePageClient() {
                             </p>
                           ) : null}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void handleChooseCandidate(candidate, candidateIndex)
-                          }
-                          disabled={isCandidateDisabled}
-                          className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-on-primary shadow-sm transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
-                        >
-                          {isSavingCandidate ? "Opening..." : "View"}
-                        </button>
+                        <div className="flex shrink-0 flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void handleChooseCandidate(candidate, candidateIndex)
+                            }
+                            disabled={isCandidateDisabled}
+                            className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-on-primary shadow-sm transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                          >
+                            {isSavingCandidate ? "Opening..." : "View"}
+                          </button>
+                          <AddToMealPlannerButton
+                            recipeName={candidate.name}
+                            variant="compact"
+                            resolveRecipeId={() => saveCandidateToRecipeId(candidate)}
+                          />
+                        </div>
                       </div>
                     </div>
                   );
@@ -1058,17 +1090,30 @@ export default function AiRecipePageClient() {
                   const isBookmarkDisabled = isLoadingBookmarks || isSaving;
 
                   return (
-                    <Link
+                    <div
                       key={recipe.id}
-                      href={`/recipes/${recipe.id}?from=ai-recipe`}
-                      className="block rounded-2xl bg-surface-container-lowest p-4 editorial-shadow transition-transform active:scale-[0.99]"
+                      className="rounded-2xl bg-surface-container-lowest p-4 editorial-shadow transition-transform active:scale-[0.99]"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-headline text-lg font-bold">{recipe.name}</p>
+                          <Link
+                            href={`/recipes/${recipe.id}?from=ai-recipe`}
+                            className="font-headline text-lg font-bold transition-colors hover:text-primary"
+                          >
+                            {recipe.name}
+                          </Link>
                           <p className="mt-1 text-xs text-on-surface-variant">
                             {recipe.explanation}
                           </p>
+                          <Link
+                            href={`/recipes/${recipe.id}?from=ai-recipe`}
+                            className="mt-3 inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-primary"
+                          >
+                            View
+                            <span className="material-symbols-outlined text-sm">
+                              arrow_forward
+                            </span>
+                          </Link>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -1103,7 +1148,14 @@ export default function AiRecipePageClient() {
                           </span>
                         </div>
                       </div>
-                    </Link>
+                      <div className="mt-3 flex justify-end">
+                        <AddToMealPlannerButton
+                          recipeId={recipe.id}
+                          recipeName={recipe.name}
+                          variant="compact"
+                        />
+                      </div>
+                    </div>
                   );
                 })}
               </div>
