@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email: parsedPayload.data.email.toLowerCase() },
-      select: { id: true, email: true, passwordHash: true },
+      select: { id: true, email: true, passwordHash: true, role: true },
     });
 
     if (!user) {
@@ -53,6 +53,7 @@ export async function POST(request: Request) {
       user: {
         id: user.id,
         email: user.email,
+        role: user.role,
       },
     });
 
