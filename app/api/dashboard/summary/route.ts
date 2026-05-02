@@ -8,6 +8,8 @@ import {
 } from "@/lib/nutrition";
 import { prisma } from "@/lib/prisma";
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 const getTodayRange = () => {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
@@ -18,12 +20,43 @@ const getTodayRange = () => {
   return { start, end };
 };
 
+const getExpiryLabel = (expiryDate: Date, todayStart: Date) => {
+  const expiryStart = new Date(expiryDate);
+  expiryStart.setHours(0, 0, 0, 0);
+
+  const daysUntilExpiry = Math.round(
+    (expiryStart.getTime() - todayStart.getTime()) / ONE_DAY_MS,
+  );
+
+  if (daysUntilExpiry < 0) {
+    return "Expired";
+  }
+
+  if (daysUntilExpiry === 0) {
+    return "Expires today";
+  }
+
+  if (daysUntilExpiry === 1) {
+    return "Expires tomorrow";
+  }
+
+  return `Expires in ${daysUntilExpiry} days`;
+};
+
 export async function GET() {
   try {
     const userId = await requireUserId();
     const { start, end } = getTodayRange();
+    const nearExpiryEnd = new Date(start);
+    nearExpiryEnd.setDate(start.getDate() + 3);
 
-    const [user, intakeAggregate, outtakeAggregate, mealPlans] = await Promise.all([
+    const [
+      user,
+      intakeAggregate,
+      outtakeAggregate,
+      mealPlans,
+      nearExpiryFridgeItems,
+    ] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -64,6 +97,25 @@ export async function GET() {
               fat: true,
             },
           },
+        },
+      }),
+      prisma.fridgeItem.findMany({
+        where: {
+          userId,
+          expiryDate: {
+            not: null,
+            lt: nearExpiryEnd,
+          },
+        },
+        orderBy: [{ expiryDate: "asc" }, { createdAt: "desc" }],
+        take: 3,
+        select: {
+          id: true,
+          name: true,
+          category: true,
+          quantity: true,
+          unit: true,
+          expiryDate: true,
         },
       }),
     ]);
@@ -109,6 +161,24 @@ export async function GET() {
       0,
     );
 
+    const nearExpiryItems = nearExpiryFridgeItems.flatMap((item) => {
+      if (!item.expiryDate) {
+        return [];
+      }
+
+      return [
+        {
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          quantity: item.quantity,
+          unit: item.unit,
+          expiryDate: item.expiryDate.toISOString(),
+          expiryLabel: getExpiryLabel(item.expiryDate, start),
+        },
+      ];
+    });
+
     return NextResponse.json({
       targetCalories,
       totalIntakeToday,
@@ -117,6 +187,7 @@ export async function GET() {
       macroTargets,
       macroCurrent,
       caloriesCurrent,
+      nearExpiryItems,
     });
   } catch (error) {
     if (error instanceof UnauthorizedError) {

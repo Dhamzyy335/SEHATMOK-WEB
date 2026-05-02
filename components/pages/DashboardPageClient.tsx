@@ -41,12 +41,23 @@ type DashboardSummary = {
   macroTargets: MacroSummary;
   macroCurrent: MacroSummary;
   caloriesCurrent?: number;
+  nearExpiryItems: NearExpiryItem[];
 };
 
 type MacroSummary = {
   proteinG: number;
   carbsG: number;
   fatsG: number;
+};
+
+type NearExpiryItem = {
+  id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  expiryDate: string;
+  expiryLabel: string;
 };
 
 type MealSlotValue = "BREAKFAST" | "LUNCH" | "DINNER";
@@ -139,6 +150,7 @@ const fallbackSummary: DashboardSummary = {
   remainingCalories: 1250,
   macroTargets: emptyMacroSummary,
   macroCurrent: emptyMacroSummary,
+  nearExpiryItems: [],
 };
 
 const emptyMealPlanSlots: MealPlanSlots = {
@@ -659,33 +671,51 @@ export default function DashboardPageClient() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             <div className="flex overflow-hidden rounded-xl border-l-4 border-secondary bg-surface-container-lowest p-1 editorial-shadow lg:col-span-2">
               <div className="flex flex-1 flex-col justify-center p-6">
-                <div className="mb-2 flex items-center gap-2 text-secondary">
-                  <span className="material-symbols-outlined text-sm">warning</span>
-                  <span className="text-xs font-bold uppercase tracking-widest">
-                    Near Expiry
-                  </span>
+                <div className="mb-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 text-secondary">
+                    <span className="material-symbols-outlined text-sm">warning</span>
+                    <span className="text-xs font-bold uppercase tracking-widest">
+                      Near Expiry
+                    </span>
+                  </div>
+                  <Link
+                    href="/fridge"
+                    className="text-xs font-bold uppercase tracking-widest text-primary"
+                  >
+                    View fridge
+                  </Link>
                 </div>
-                <h3 className="mb-2 font-headline text-xl font-bold">Organic Greek Yogurt</h3>
-                <p className="text-sm leading-relaxed text-on-surface-variant">
-                  Expires in 2 days. Perfect for a breakfast smoothie bowl tomorrow
-                  morning.
-                </p>
-                <Link
-                  href="/ai-recipe"
-                  className="group mt-4 flex items-center gap-1 text-sm font-bold text-primary"
-                >
-                  Cook with this
-                  <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">
-                    arrow_forward
-                  </span>
-                </Link>
-              </div>
-              <div className="relative hidden w-1/3 sm:block">
-                <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAocdUXY1Fzs7MYCrcd_RX2414EZgOBza-ax1C7rd3uAyfhNZ45rSAguWNx1J4CO-sjE54H9KfxyMWnutrI8OCpxuqGo82tiCFytp3ZxNtLy9m3RBci61XlIqY0K2_RXXcEN2tdzKWn3UN96MJqvPmE7YBQX7pMbV_iukSfvmgsc-nA6OJz1Y7LJmpf6teINgfIsCuP0iTuXBGi4QAjPfiqmGgkP50AswM9PIgxOI2XaokNvqGpC51cITfNQFItLgF14ySZXLTs-_Ue"
-                  alt="Greek Yogurt"
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
+
+                {isLoading ? (
+                  <p className="text-sm font-semibold text-on-surface-variant">
+                    Checking your fridge...
+                  </p>
+                ) : summary.nearExpiryItems.length > 0 ? (
+                  <div className="space-y-3">
+                    {summary.nearExpiryItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="rounded-xl bg-surface-container-low px-4 py-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-headline text-base font-bold">{item.name}</h3>
+                            <p className="mt-1 text-xs text-on-surface-variant">
+                              {item.quantity} {item.unit} - {item.category}
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-secondary-container px-3 py-1 text-xs font-bold text-on-secondary-container">
+                            {item.expiryLabel}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm leading-relaxed text-on-surface-variant">
+                    No items expiring soon.
+                  </p>
+                )}
               </div>
             </div>
 
