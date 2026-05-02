@@ -14,6 +14,109 @@ const recommendationRequestSchema = z.object({
   dietaryPreferences: z.string().trim().max(500).optional(),
 });
 
+const createFridgeMatchExplanation = (
+  matchedCount: number,
+  totalRequiredCount: number,
+): string => {
+  return `Matches ${matchedCount}/${totalRequiredCount} required ingredients from your fridge.`;
+};
+
+export async function GET() {
+  try {
+    const userId = await requireUserId();
+
+    const [user, fridgeItems, recipes] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { targetCalories: true },
+      }),
+      prisma.fridgeItem.findMany({
+        where: { userId },
+        select: { id: true, name: true, category: true },
+      }),
+      prisma.recipe.findMany({
+        include: {
+          recipeIngredients: {
+            include: {
+              ingredient: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    if (!user) {
+      return NextResponse.json({ message: "User not found." }, { status: 404 });
+    }
+
+    const fridgeIngredientNames = fridgeItems.map((item) => item.name);
+
+    const scoredRecipes = recipes
+      .map((recipe) => {
+        const recipeIngredientNames = recipe.recipeIngredients.map(
+          (relation) => relation.ingredient.name,
+        );
+
+        const ingredientScoreResult = calculateIngredientScore(
+          fridgeIngredientNames,
+          recipeIngredientNames,
+        );
+        const calorieScore = calculateCalorieScore(
+          recipe.calories,
+          user.targetCalories,
+        );
+        const finalScore = calculateFinalRecommendationScore(
+          ingredientScoreResult.ingredientScore,
+          calorieScore,
+        );
+
+        return {
+          id: recipe.id,
+          name: recipe.name,
+          imageUrl: recipe.imageUrl,
+          calories: recipe.calories,
+          protein: recipe.protein,
+          carbs: recipe.carbs,
+          fat: recipe.fat,
+          matchPercent: ingredientScoreResult.matchPercent,
+          ingredientScore: ingredientScoreResult.ingredientScore,
+          calorieScore,
+          finalScore,
+          explanation: createFridgeMatchExplanation(
+            ingredientScoreResult.matchedCount,
+            ingredientScoreResult.totalRequiredCount,
+          ),
+        };
+      })
+      .filter((recipe) => recipe.ingredientScore > 0)
+      .sort(
+        (a, b) =>
+          b.ingredientScore - a.ingredientScore ||
+          b.calorieScore - a.calorieScore ||
+          a.name.localeCompare(b.name),
+      );
+
+    return NextResponse.json({
+      targetCalories: user.targetCalories,
+      selectedFridgeItems: fridgeItems,
+      dietaryPreferences: "",
+      recommendations: scoredRecipes.slice(0, 10),
+    });
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+    }
+
+    return NextResponse.json(
+      {
+        message: "Failed to fetch fridge-based recommendations.",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId();

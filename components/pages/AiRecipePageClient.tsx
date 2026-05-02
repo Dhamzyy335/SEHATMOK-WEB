@@ -103,6 +103,14 @@ const formatMacro = (value: number | null): string => {
   return Number.isInteger(value) ? value.toString() : value.toFixed(1);
 };
 
+const formatCalories = (value: number | null): string => {
+  if (value === null) {
+    return "--";
+  }
+
+  return Math.round(value).toString();
+};
+
 const AI_RECIPE_STORAGE_KEY = "aiRecipe:lastState";
 const AI_RECIPE_STATE_MAX_AGE_MS = 30 * 60 * 1000;
 
@@ -217,6 +225,8 @@ export default function AiRecipePageClient() {
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
   const [aiCandidates, setAiCandidates] = useState<AiRecipeCandidate[]>([]);
   const [isLoadingIngredients, setIsLoadingIngredients] = useState(true);
+  const [isLoadingInitialRecommendations, setIsLoadingInitialRecommendations] =
+    useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -287,6 +297,32 @@ export default function AiRecipePageClient() {
     }
   }, [router]);
 
+  const loadInitialRecommendations = useCallback(async () => {
+    try {
+      setIsLoadingInitialRecommendations(true);
+
+      const response = await fetch("/api/recommendations", {
+        cache: "no-store",
+      });
+
+      if (response.status === 401) {
+        router.replace("/login");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch recommendations (${response.status})`);
+      }
+
+      const data = (await response.json()) as RecommendationsResponse;
+      setRecommendations(data.recommendations);
+    } catch {
+      setRecommendations([]);
+    } finally {
+      setIsLoadingInitialRecommendations(false);
+    }
+  }, [router]);
+
   useEffect(() => {
     void loadFridgeItems();
   }, [loadFridgeItems]);
@@ -294,6 +330,10 @@ export default function AiRecipePageClient() {
   useEffect(() => {
     void loadBookmarks();
   }, [loadBookmarks]);
+
+  useEffect(() => {
+    void loadInitialRecommendations();
+  }, [loadInitialRecommendations]);
 
   useEffect(() => {
     const stored = readAiRecipeState();
@@ -427,9 +467,7 @@ export default function AiRecipePageClient() {
     setIsSavingCandidateIndex(null);
     setErrorMessage(null);
     clearAiRecipeState();
-    if (recommendations.length === 0) {
-      setHasGenerated(false);
-    }
+    setHasGenerated(false);
   };
 
   const handleChooseCandidate = async (
@@ -536,7 +574,7 @@ export default function AiRecipePageClient() {
   };
 
   const featuredRecipe = useMemo(
-    () => recommendations[0] ?? fallbackRecommendation,
+    () => recommendations[0] ?? null,
     [recommendations],
   );
 
@@ -551,32 +589,49 @@ export default function AiRecipePageClient() {
         carbs: featuredCandidate?.nutrition.carbs ?? 0,
         fat: featuredCandidate?.nutrition.fat ?? 0,
       }
+    : featuredRecipe
+      ? {
+          name: featuredRecipe.name,
+          description: featuredRecipe.explanation,
+          calories: featuredRecipe.calories,
+          protein: featuredRecipe.protein,
+          carbs: featuredRecipe.carbs,
+          fat: featuredRecipe.fat,
+        }
     : {
-        name: featuredRecipe.name,
-        description: featuredRecipe.explanation,
-        calories: featuredRecipe.calories ?? 0,
-        protein: featuredRecipe.protein ?? null,
-        carbs: featuredRecipe.carbs ?? null,
-        fat: featuredRecipe.fat ?? null,
+        name: isLoadingInitialRecommendations
+          ? "Finding fridge matches..."
+          : "No fridge match yet",
+        description: isLoadingInitialRecommendations
+          ? "Checking saved recipes against your current fridge ingredients."
+          : "No saved recipe matches your current fridge ingredients yet.",
+        calories: null,
+        protein: null,
+        carbs: null,
+        fat: null,
       };
   const featuredImageUrl = hasAiCandidates
     ? fallbackRecommendation.imageUrl ?? ""
-    : featuredRecipe.imageUrl ?? fallbackRecommendation.imageUrl ?? "";
+    : featuredRecipe?.imageUrl ?? fallbackRecommendation.imageUrl ?? "";
 
   const hasRecommendations = recommendations.length > 0;
   const showNoRecommendations =
     hasGenerated && !isGenerating && !errorMessage && !hasRecommendations && !hasAiCandidates;
   const featuredIsBookmarked =
-    hasRecommendations && !hasAiCandidates && bookmarkedIds.has(featuredRecipe.id);
+    Boolean(featuredRecipe) &&
+    !hasAiCandidates &&
+    bookmarkedIds.has(featuredRecipe?.id ?? "");
   const featuredIsSaving =
-    hasRecommendations && !hasAiCandidates && savingBookmarkIds.has(featuredRecipe.id);
+    Boolean(featuredRecipe) &&
+    !hasAiCandidates &&
+    savingBookmarkIds.has(featuredRecipe?.id ?? "");
   const featuredBookmarkDisabled =
-    !hasRecommendations || hasAiCandidates || isLoadingBookmarks || featuredIsSaving;
+    !featuredRecipe || hasAiCandidates || isLoadingBookmarks || featuredIsSaving;
   const featuredBadgeLabel = hasAiCandidates
     ? `AI Option ${aiCandidates.length > 1 ? `1/${aiCandidates.length}` : "1"}`
-    : hasRecommendations
+    : featuredRecipe
       ? `${featuredRecipe.matchPercent}% Match`
-      : isGenerating
+      : isGenerating || isLoadingInitialRecommendations
         ? "Scoring..."
         : "Ready";
 
@@ -762,7 +817,11 @@ export default function AiRecipePageClient() {
               {!hasAiCandidates && hasRecommendations ? (
                 <button
                   type="button"
-                  onClick={() => void toggleBookmark(featuredRecipe.id)}
+                  onClick={() => {
+                    if (featuredRecipe) {
+                      void toggleBookmark(featuredRecipe.id);
+                    }
+                  }}
                   disabled={featuredBookmarkDisabled}
                   aria-pressed={featuredIsBookmarked}
                   aria-label={
@@ -809,7 +868,7 @@ export default function AiRecipePageClient() {
                   </div>
                   <div className="text-right">
                     <span className="block text-lg font-bold text-primary">
-                      {Math.round(featuredMetrics.calories)}
+                      {formatCalories(featuredMetrics.calories)}
                     </span>
                     <span className="block text-[10px] font-bold uppercase tracking-tighter text-on-surface-variant">
                       kcal
@@ -853,7 +912,7 @@ export default function AiRecipePageClient() {
                         arrow_forward
                       </span>
                     </button>
-                  ) : hasRecommendations ? (
+                  ) : featuredRecipe ? (
                     <Link
                       href={`/recipes/${featuredRecipe.id}?from=ai-recipe`}
                       className="flex w-full items-center justify-center gap-2 text-sm font-bold text-primary hover:underline"
@@ -865,9 +924,11 @@ export default function AiRecipePageClient() {
                     </Link>
                   ) : (
                     <span className="block text-center text-sm font-bold text-on-surface-variant">
-                      {showNoRecommendations
-                        ? "No recommendations found for selected items."
-                        : "Select ingredients to see recommendations"}
+                      {isLoadingInitialRecommendations
+                        ? "Checking your fridge for recipe matches..."
+                        : showNoRecommendations
+                          ? "No recommendations found for selected items."
+                          : "No saved recipes match your fridge yet."}
                     </span>
                   )}
                 </div>

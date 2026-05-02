@@ -22,15 +22,58 @@ export const normalizeName = (name: string): string => {
     .replace(/\s+/g, " ");
 };
 
-export const isMatch = (a: string, b: string): boolean => {
-  const normalizedA = normalizeName(a);
-  const normalizedB = normalizeName(b);
+const singularizeWord = (word: string): string => {
+  if (word.length <= 3 || word.endsWith("ss")) {
+    return word;
+  }
 
-  if (normalizedA.length === 0 || normalizedB.length === 0) {
+  if (word.endsWith("ies")) {
+    return `${word.slice(0, -3)}y`;
+  }
+
+  if (word.endsWith("es")) {
+    return word.slice(0, -2);
+  }
+
+  if (word.endsWith("s")) {
+    return word.slice(0, -1);
+  }
+
+  return word;
+};
+
+const getNameVariants = (name: string): string[] => {
+  const normalized = normalizeName(name);
+  if (!normalized) {
+    return [];
+  }
+
+  const words = normalized.split(" ");
+  const variants = new Set([normalized]);
+
+  variants.add(words.map(singularizeWord).join(" "));
+
+  if (words.length > 1) {
+    const lastWordSingular = singularizeWord(words[words.length - 1]);
+    variants.add([...words.slice(0, -1), lastWordSingular].join(" "));
+  }
+
+  return Array.from(variants).filter((variant) => variant.length > 0);
+};
+
+export const isMatch = (a: string, b: string): boolean => {
+  const variantsA = getNameVariants(a);
+  const variantsB = getNameVariants(b);
+
+  if (variantsA.length === 0 || variantsB.length === 0) {
     return false;
   }
 
-  return normalizedA.includes(normalizedB) || normalizedB.includes(normalizedA);
+  return variantsA.some((variantA) =>
+    variantsB.some(
+      (variantB) => variantA.includes(variantB) || variantB.includes(variantA),
+    ),
+  );
 };
 
 export type IngredientScoreResult = {
