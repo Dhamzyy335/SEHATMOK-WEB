@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NotificationBell from "@/components/NotificationBell";
 import TopAppBarAvatar from "@/components/TopAppBarAvatar";
 
 type TopAppBarProps = {
@@ -41,14 +42,7 @@ export default function TopAppBar({
             {title}
           </h1>
         </div>
-        <button
-          type="button"
-          className="rounded-full p-2 transition-colors duration-200 hover:bg-[#EFF1EF] active:scale-95 dark:hover:bg-[#2C2F2E]"
-        >
-          <span className="material-symbols-outlined text-primary dark:text-primary-fixed">
-            notifications
-          </span>
-        </button>
+        <NotificationBell />
       </div>
     </header>
   );

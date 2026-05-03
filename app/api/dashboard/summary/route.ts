@@ -10,6 +10,12 @@ import { prisma } from "@/lib/prisma";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
+const mealSlotLabels = [
+  { value: "BREAKFAST", label: "Breakfast" },
+  { value: "LUNCH", label: "Lunch" },
+  { value: "DINNER", label: "Dinner" },
+] as const;
+
 const getTodayRange = () => {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
@@ -56,6 +62,8 @@ export async function GET() {
       outtakeAggregate,
       mealPlans,
       nearExpiryFridgeItems,
+      nearExpiryCount,
+      expiredCount,
       fridgeItemCount,
       activeGroceryCount,
     ] = await Promise.all([
@@ -94,6 +102,7 @@ export async function GET() {
           date: { gte: start, lt: end },
         },
         select: {
+          slot: true,
           recipe: {
             select: {
               calories: true,
@@ -121,6 +130,23 @@ export async function GET() {
           quantity: true,
           unit: true,
           expiryDate: true,
+        },
+      }),
+      prisma.fridgeItem.count({
+        where: {
+          userId,
+          expiryDate: {
+            gte: start,
+            lt: nearExpiryEnd,
+          },
+        },
+      }),
+      prisma.fridgeItem.count({
+        where: {
+          userId,
+          expiryDate: {
+            lt: start,
+          },
         },
       }),
       prisma.fridgeItem.count({
@@ -176,6 +202,10 @@ export async function GET() {
       (total, item) => total + (item.recipe?.calories ?? 0),
       0,
     );
+    const plannedSlots = new Set(mealPlans.map((item) => item.slot));
+    const mealPlanMissingSlots = mealSlotLabels
+      .filter((slot) => !plannedSlots.has(slot.value))
+      .map((slot) => slot.label);
 
     const nearExpiryItems = nearExpiryFridgeItems.flatMap((item) => {
       if (!item.expiryDate) {
@@ -209,6 +239,9 @@ export async function GET() {
         avatarUrl: user.avatarUrl,
       },
       nearExpiryItems,
+      nearExpiryCount,
+      expiredCount,
+      mealPlanMissingSlots,
       fridgeItemCount,
       activeGroceryCount,
     });

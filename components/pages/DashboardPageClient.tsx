@@ -50,6 +50,8 @@ type DashboardSummary = {
     avatarUrl: string | null;
   };
   nearExpiryItems: NearExpiryItem[];
+  nearExpiryCount: number;
+  expiredCount: number;
   fridgeItemCount: number;
   activeGroceryCount: number;
 };
@@ -172,6 +174,8 @@ const fallbackSummary: DashboardSummary = {
     avatarUrl: null,
   },
   nearExpiryItems: [],
+  nearExpiryCount: 0,
+  expiredCount: 0,
   fridgeItemCount: 0,
   activeGroceryCount: 0,
 };
@@ -479,7 +483,11 @@ export default function DashboardPageClient() {
 
   return (
     <div className="min-h-screen bg-surface font-body text-on-surface pb-32">
-      <TopAppBar fixed avatarUrl={summary.user?.avatarUrl ?? undefined} avatarAlt={avatarAlt} />
+      <TopAppBar
+        fixed
+        avatarUrl={summary.user?.avatarUrl ?? undefined}
+        avatarAlt={avatarAlt}
+      />
 
       <main className="mx-auto max-w-screen-xl space-y-8 px-6 pt-24">
         {errorMessage ? (

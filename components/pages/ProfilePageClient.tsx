@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
+import NotificationBell from "@/components/NotificationBell";
 
 type ActivityLevel = "SEDENTARY" | "LIGHT" | "MODERATE" | "ACTIVE" | "VERY_ACTIVE";
 
@@ -511,15 +512,18 @@ export default function ProfilePageClient() {
       <header className="sticky top-0 z-50 bg-[#F5F7F5]">
         <div className="mx-auto flex w-full max-w-screen-xl items-center justify-between px-6 py-4">
           <h1 className="font-headline text-xl font-bold tracking-tight">My Profile</h1>
-          <button
-            type="button"
-            aria-label="Edit Profile"
-            disabled={!profile || isLoading}
-            onClick={openProfileEditor}
-            className="rounded-full p-2 transition-colors hover:bg-surface-container-low active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-primary">edit</span>
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <button
+              type="button"
+              aria-label="Edit Profile"
+              disabled={!profile || isLoading}
+              onClick={openProfileEditor}
+              className="rounded-full p-2 transition-colors hover:bg-surface-container-low active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-primary">edit</span>
+            </button>
+          </div>
         </div>
       </header>
 
