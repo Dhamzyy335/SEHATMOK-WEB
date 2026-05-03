@@ -233,6 +233,7 @@ export default async function AdminDashboardPage() {
       where: {
         createdAt: { gte: activityStartDate },
         actorId: { not: null },
+        status: 'SUCCESS',
       },
       select: {
         actorId: true,
@@ -293,7 +294,6 @@ export default async function AdminDashboardPage() {
     (date) => dailyActiveUsers.get(getDateKey(date))?.size ?? 0,
   );
   const maxActiveUsers = Math.max(...activeUserCounts);
-  const hasActivityData = maxActiveUsers > 0;
   const chartData: ChartDataPoint[] = lastSevenDays.map((date, index) => {
     const value = activeUserCounts[index];
 
@@ -301,7 +301,7 @@ export default async function AdminDashboardPage() {
       day: dayFormatter.format(date),
       value,
       label: `${formatCount(value)} ${pluralize(value, 'active user')}`,
-      heightPercentage: hasActivityData ? Math.max((value / maxActiveUsers) * 100, value > 0 ? 8 : 0) : 0,
+      heightPercentage: maxActiveUsers > 0 ? Math.max((value / maxActiveUsers) * 100, value > 0 ? 8 : 0) : 0,
     };
   });
 
@@ -497,32 +497,27 @@ export default async function AdminDashboardPage() {
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Last 7 days recorded activity</p>
             </div>
           </div>
-          {hasActivityData ? (
-            <>
-              <div className="flex items-end justify-between gap-2 h-64 pb-4 border-b border-slate-200 dark:border-slate-700">
-                {chartData.map((data) => (
-                  <div key={data.day} className="flex-1 flex flex-col items-center">
-                    <div
-                      className={`w-full rounded-t-lg transition-colors ${
-                        data.value === maxActiveUsers
-                          ? 'bg-emerald-500 shadow-lg'
-                          : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-400'
-                      }`}
-                      style={{ height: `${data.heightPercentage}%` }}
-                      title={data.label}
-                    />
-                  </div>
-                ))}
+          <div className="flex items-end justify-between gap-2 h-64 pb-4 border-b border-slate-200 dark:border-slate-700">
+            {chartData.map((data) => (
+              <div key={data.day} className="flex-1 flex h-full flex-col items-center justify-end gap-2">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  {formatCount(data.value)}
+                </span>
+                <div
+                  className={`w-full rounded-t-lg transition-colors ${
+                    data.value > 0 && data.value === maxActiveUsers
+                      ? 'bg-emerald-500 shadow-lg'
+                      : 'bg-slate-100 dark:bg-slate-800 hover:bg-emerald-400'
+                  }`}
+                  style={{ height: `${data.heightPercentage}%` }}
+                  title={data.label}
+                />
               </div>
-              <div className="flex justify-between pt-4 text-xs font-medium text-slate-600 dark:text-slate-400">
-                {chartData.map((data) => <span key={data.day}>{data.day}</span>)}
-              </div>
-            </>
-          ) : (
-            <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-sm font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-400">
-              No activity data available yet
-            </div>
-          )}
+            ))}
+          </div>
+          <div className="flex justify-between pt-4 text-xs font-medium text-slate-600 dark:text-slate-400">
+            {chartData.map((data) => <span key={data.day}>{data.day}</span>)}
+          </div>
         </div>
         <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 rounded-xl p-6 border border-emerald-200 dark:border-emerald-900">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Quick Summary</h3>

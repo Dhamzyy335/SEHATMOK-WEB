@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { setAuthCookie } from "@/lib/auth";
+import { writeSystemLog } from "@/lib/system-logs";
 
 const loginSchema = z.object({
   email: z.string().trim().email(),
@@ -68,6 +69,19 @@ export async function POST(request: Request) {
       user: {
         id: user.id,
         email: user.email,
+        role: user.role,
+      },
+    });
+
+    await writeSystemLog({
+      actorId: user.id,
+      action: "USER_LOGIN",
+      targetType: "USER",
+      targetId: user.id,
+      targetLabel: user.email,
+      message: "User logged in.",
+      status: "SUCCESS",
+      metadata: {
         role: user.role,
       },
     });
