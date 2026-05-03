@@ -62,6 +62,9 @@ export async function GET() {
       prisma.user.findUnique({
         where: { id: userId },
         select: {
+          email: true,
+          name: true,
+          avatarUrl: true,
           targetCalories: true,
           age: true,
           weight: true,
@@ -200,6 +203,11 @@ export async function GET() {
       macroTargets,
       macroCurrent,
       caloriesCurrent,
+      user: {
+        name: user.name,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+      },
       nearExpiryItems,
       fridgeItemCount,
       activeGroceryCount,

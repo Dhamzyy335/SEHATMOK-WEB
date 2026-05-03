@@ -1,8 +1,10 @@
 import Link from "next/link";
+import TopAppBarAvatar from "@/components/TopAppBarAvatar";
 
 type TopAppBarProps = {
   title?: string;
   avatarUrl?: string;
+  avatarAlt?: string;
   fixed?: boolean;
   backHref?: string;
   backLabel?: string;
@@ -14,6 +16,7 @@ const defaultAvatar =
 export default function TopAppBar({
   title = "Good morning",
   avatarUrl = defaultAvatar,
+  avatarAlt = "User avatar",
   fixed = false,
   backHref,
   backLabel = "Back",
@@ -33,9 +36,7 @@ export default function TopAppBar({
               <span className="material-symbols-outlined">arrow_back</span>
             </Link>
           ) : null}
-          <div className="h-10 w-10 overflow-hidden rounded-full bg-surface-container-highest">
-            <img src={avatarUrl} alt="User Profile" className="h-full w-full object-cover" />
-          </div>
+          <TopAppBarAvatar src={avatarUrl} fallbackSrc={defaultAvatar} alt={avatarAlt} />
           <h1 className="font-headline text-lg font-bold tracking-tight text-[#2C2F2E] dark:text-white">
             {title}
           </h1>

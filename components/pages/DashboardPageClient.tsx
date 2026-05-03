@@ -44,6 +44,11 @@ type DashboardSummary = {
   macroTargets: MacroSummary;
   macroCurrent: MacroSummary;
   caloriesCurrent?: number;
+  user: {
+    name: string | null;
+    email: string;
+    avatarUrl: string | null;
+  };
   nearExpiryItems: NearExpiryItem[];
   fridgeItemCount: number;
   activeGroceryCount: number;
@@ -161,6 +166,11 @@ const fallbackSummary: DashboardSummary = {
   remainingCalories: 1250,
   macroTargets: emptyMacroSummary,
   macroCurrent: emptyMacroSummary,
+  user: {
+    name: null,
+    email: "",
+    avatarUrl: null,
+  },
   nearExpiryItems: [],
   fridgeItemCount: 0,
   activeGroceryCount: 0,
@@ -464,10 +474,12 @@ export default function DashboardPageClient() {
 
   const progressPercent = Math.round(progressRatio * 100);
   const strokeDashOffset = circumference - progressRatio * circumference;
+  const userName = summary.user?.name?.trim() ?? "";
+  const avatarAlt = userName || "User avatar";
 
   return (
     <div className="min-h-screen bg-surface font-body text-on-surface pb-32">
-      <TopAppBar fixed />
+      <TopAppBar fixed avatarUrl={summary.user?.avatarUrl ?? undefined} avatarAlt={avatarAlt} />
 
       <main className="mx-auto max-w-screen-xl space-y-8 px-6 pt-24">
         {errorMessage ? (
@@ -582,7 +594,7 @@ export default function DashboardPageClient() {
 
         <section className="space-y-6">
           <div className="flex items-baseline justify-between">
-            <h2 className="font-headline text-2xl font-bold">Today's Meal Plan</h2>
+            <h2 className="font-headline text-2xl font-bold">Today&apos;s Meal Plan</h2>
             <Link
               href="/meal-plans"
               className="text-sm font-bold uppercase tracking-widest text-primary"
@@ -599,7 +611,7 @@ export default function DashboardPageClient() {
 
           {isMealPlanLoading ? (
             <div className="rounded-xl bg-surface-container-lowest p-4 text-sm font-semibold text-on-surface-variant">
-              Loading today's plan...
+              Loading today&apos;s plan...
             </div>
           ) : null}
 
