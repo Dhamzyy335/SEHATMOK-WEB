@@ -3,6 +3,12 @@ import UserManagementClient, {
 } from './UserManagementClient';
 import { prisma } from '@/lib/prisma';
 
+type UserManagementPageProps = {
+  searchParams?: Promise<{
+    newUser?: string | string[] | undefined;
+  }>;
+};
+
 const getNameFromEmail = (email: string): string => {
   const localPart = email.split('@')[0] || 'User';
   const spacedName = localPart.replace(/[._-]+/g, ' ').trim();
@@ -14,11 +20,18 @@ const getNameFromEmail = (email: string): string => {
   return spacedName.replace(/\b\w/g, (character) => character.toUpperCase());
 };
 
-export default async function UserManagementPage() {
+export default async function UserManagementPage({ searchParams }: UserManagementPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const newUserParam = resolvedSearchParams.newUser;
+  const initialOpenCreateModal = Array.isArray(newUserParam)
+    ? newUserParam.includes('1')
+    : newUserParam === '1';
+
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
+      name: true,
       email: true,
       role: true,
       status: true,
@@ -63,7 +76,7 @@ export default async function UserManagementPage() {
 
   const mappedUsers: UserManagementUser[] = users.map((user) => ({
     id: user.id,
-    name: getNameFromEmail(user.email),
+    name: user.name ?? getNameFromEmail(user.email),
     email: user.email,
     registerDate: user.createdAt?.toISOString() ?? '-',
     fridgeItems: user._count.fridgeItems,
@@ -89,5 +102,10 @@ export default async function UserManagementPage() {
     })),
   }));
 
-  return <UserManagementClient users={mappedUsers} />;
+  return (
+    <UserManagementClient
+      users={mappedUsers}
+      initialOpenCreateModal={initialOpenCreateModal}
+    />
+  );
 }

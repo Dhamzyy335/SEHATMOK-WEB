@@ -46,6 +46,7 @@ type FilterStatus = 'all' | 'active' | 'inactive' | 'suspended';
 
 type UserManagementClientProps = {
   users: UserManagementUser[];
+  initialOpenCreateModal?: boolean;
 };
 
 const countFormatter = new Intl.NumberFormat('en-US');
@@ -88,13 +89,34 @@ type EditFormState = {
   status: UserManagementUser['status'];
 };
 
+type CreateFormState = {
+  name: string;
+  email: string;
+  password: string;
+  role: UserManagementUser['role'];
+  status: UserManagementUser['status'];
+};
+
 type ApiErrorResponse = {
   message?: string;
 };
 
-export default function UserManagementClient({ users }: UserManagementClientProps) {
+const getEmptyCreateForm = (): CreateFormState => ({
+  name: '',
+  email: '',
+  password: '',
+  role: 'user',
+  status: 'active',
+});
+
+export default function UserManagementClient({
+  users,
+  initialOpenCreateModal = false,
+}: UserManagementClientProps) {
   const router = useRouter();
   const [managedUsers, setManagedUsers] = useState<UserManagementUser[]>(users);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(initialOpenCreateModal);
+  const [createForm, setCreateForm] = useState<CreateFormState>(getEmptyCreateForm);
   const [selectedUser, setSelectedUser] = useState<ModalUser | null>(null);
   const [editingUser, setEditingUser] = useState<UserManagementUser | null>(null);
   const [editForm, setEditForm] = useState<EditFormState>({ role: 'user', status: 'active' });
@@ -104,14 +126,22 @@ export default function UserManagementClient({ users }: UserManagementClientProp
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     setManagedUsers(users);
   }, [users]);
+
+  useEffect(() => {
+    if (initialOpenCreateModal) {
+      setIsCreateModalOpen(true);
+    }
+  }, [initialOpenCreateModal]);
 
   const filteredUsers = useMemo(() => {
     let result = managedUsers;
@@ -170,6 +200,78 @@ export default function UserManagementClient({ users }: UserManagementClientProp
       status: user.status,
     });
     setEditError(null);
+  };
+
+  const handleOpenCreate = () => {
+    setCreateForm(getEmptyCreateForm());
+    setCreateError(null);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseCreate = () => {
+    if (isCreatingUser) {
+      return;
+    }
+
+    setIsCreateModalOpen(false);
+    setCreateForm(getEmptyCreateForm());
+    setCreateError(null);
+    router.replace('/admin/user-management');
+  };
+
+  const handleCreateUser = async () => {
+    const trimmedName = createForm.name.trim();
+    const trimmedEmail = createForm.email.trim();
+
+    if (!trimmedEmail) {
+      setCreateError('Email is required.');
+      return;
+    }
+
+    if (!createForm.password) {
+      setCreateError('Password is required.');
+      return;
+    }
+
+    if (createForm.password.length < 8) {
+      setCreateError('Password must be at least 8 characters.');
+      return;
+    }
+
+    setIsCreatingUser(true);
+    setCreateError(null);
+
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: trimmedName || undefined,
+          email: trimmedEmail,
+          password: createForm.password,
+          role: rolePayloadMap[createForm.role],
+          status: statusPayloadMap[createForm.status],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorPayload = (await response.json().catch(() => ({}))) as ApiErrorResponse;
+        throw new Error(errorPayload.message ?? 'Failed to create user.');
+      }
+
+      const createdUser = (await response.json()) as UserManagementUser;
+      setManagedUsers((currentUsers) => [createdUser, ...currentUsers]);
+      setIsCreateModalOpen(false);
+      setCreateForm(getEmptyCreateForm());
+      router.replace('/admin/user-management');
+      if (!initialOpenCreateModal) {
+        router.refresh();
+      }
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : 'Failed to create user.');
+    } finally {
+      setIsCreatingUser(false);
+    }
   };
 
   const handleSaveUser = async () => {
@@ -293,9 +395,19 @@ export default function UserManagementClient({ users }: UserManagementClientProp
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h2 className="text-4xl font-bold text-on-surface mb-2">User Management</h2>
-        <p className="text-lg text-on-surface-variant">Manage and monitor all platform users</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-4xl font-bold text-on-surface mb-2">User Management</h2>
+          <p className="text-lg text-on-surface-variant">Manage and monitor all platform users</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleOpenCreate}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-semibold text-on-primary transition-colors hover:bg-primary/90"
+        >
+          <span className="material-symbols-outlined text-lg">add</span>
+          <span>New User</span>
+        </button>
       </div>
 
       {/* Controls Section */}
@@ -576,6 +688,167 @@ export default function UserManagementClient({ users }: UserManagementClientProp
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create User Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full shadow-2xl">
+            <div className="border-b border-outline-variant p-6 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-bold text-on-surface">Create User</h3>
+                <p className="text-sm text-on-surface-variant">Add a new platform account</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseCreate}
+                className="p-2 hover:bg-surface-container-low rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isCreatingUser}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <form
+              className="space-y-4 p-6"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleCreateUser();
+              }}
+            >
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-on-surface">Name</span>
+                <input
+                  type="text"
+                  value={createForm.name}
+                  onChange={(event) =>
+                    setCreateForm((currentForm) => ({
+                      ...currentForm,
+                      name: event.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-on-surface placeholder:text-outline"
+                  placeholder="Optional"
+                  disabled={isCreatingUser}
+                />
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-on-surface">Email</span>
+                <input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(event) =>
+                    setCreateForm((currentForm) => ({
+                      ...currentForm,
+                      email: event.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-on-surface placeholder:text-outline"
+                  placeholder="user@example.com"
+                  disabled={isCreatingUser}
+                  required
+                />
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-on-surface">Password</span>
+                <input
+                  type="password"
+                  value={createForm.password}
+                  onChange={(event) =>
+                    setCreateForm((currentForm) => ({
+                      ...currentForm,
+                      password: event.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-on-surface placeholder:text-outline"
+                  placeholder="At least 8 characters"
+                  disabled={isCreatingUser}
+                  minLength={8}
+                  required
+                />
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-on-surface">Role</span>
+                <select
+                  value={createForm.role}
+                  onChange={(event) =>
+                    setCreateForm((currentForm) => ({
+                      ...currentForm,
+                      role: event.target.value as UserManagementUser['role'],
+                    }))
+                  }
+                  className="w-full px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-on-surface"
+                  disabled={isCreatingUser}
+                >
+                  <option value="user">Regular User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
+
+              <div className="space-y-2">
+                <span className="text-sm font-semibold text-on-surface">Status</span>
+                <div
+                  className="grid grid-cols-1 gap-2 sm:grid-cols-3"
+                  role="group"
+                  aria-label="New user status"
+                >
+                  {editStatusOptions.map((option) => {
+                    const isSelected = createForm.status === option.value;
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={isSelected}
+                        disabled={isCreatingUser}
+                        onClick={() =>
+                          setCreateForm((currentForm) => ({
+                            ...currentForm,
+                            status: option.value,
+                          }))
+                        }
+                        className={`min-h-11 rounded-full border px-3 py-2 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                          isSelected
+                            ? option.selectedClassName
+                            : 'border-outline-variant bg-white text-on-surface-variant hover:border-primary/40 hover:bg-surface-container-low dark:bg-slate-900 dark:hover:bg-slate-800/70'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {createError ? (
+                <p className="rounded-lg bg-error-container/10 px-3 py-2 text-sm font-medium text-error">
+                  {createError}
+                </p>
+              ) : null}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleCloseCreate}
+                  disabled={isCreatingUser}
+                  className="flex-1 px-4 py-2 bg-surface-container-low text-on-surface rounded-lg font-semibold hover:bg-surface-container transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingUser}
+                  className="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isCreatingUser ? 'Creating...' : 'Create'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
