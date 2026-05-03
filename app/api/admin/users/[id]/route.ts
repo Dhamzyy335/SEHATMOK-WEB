@@ -1,7 +1,7 @@
 import { UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { verifyJwtFromCookies } from "@/lib/auth";
+import { getInactiveAccountMessage, verifyJwtFromCookies } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const userUpdateSchema = z
@@ -27,12 +27,22 @@ const getAdminUserId = async () => {
     select: {
       id: true,
       role: true,
+      status: true,
     },
   });
 
   if (!user) {
     return {
       response: NextResponse.json({ message: "Unauthorized." }, { status: 401 }),
+    };
+  }
+
+  if (user.status !== "ACTIVE") {
+    return {
+      response: NextResponse.json(
+        { message: getInactiveAccountMessage(user.status) },
+        { status: 403 },
+      ),
     };
   }
 

@@ -25,7 +25,10 @@ export async function DELETE(
     return NextResponse.json({ id });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
-      return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+      return NextResponse.json(
+        { message: error.message },
+        { status: error.statusCode },
+      );
     }
 
     return NextResponse.json(

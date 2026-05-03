@@ -15,10 +15,15 @@ export const requireAdminUserId = async (): Promise<string> => {
     select: {
       id: true,
       role: true,
+      status: true,
     },
   });
 
   if (!user) {
+    redirect("/login");
+  }
+
+  if (user.status !== "ACTIVE") {
     redirect("/login");
   }
 

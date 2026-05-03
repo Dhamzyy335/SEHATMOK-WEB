@@ -1,14 +1,18 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export const AUTH_COOKIE_NAME = "sehatmok_token";
 const AUTH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 export class UnauthorizedError extends Error {
-  constructor(message = "Unauthorized") {
+  statusCode: 401 | 403;
+
+  constructor(message = "Unauthorized.", statusCode: 401 | 403 = 401) {
     super(message);
     this.name = "UnauthorizedError";
+    this.statusCode = statusCode;
   }
 }
 
@@ -61,12 +65,35 @@ export const verifyJwtFromCookies = async (): Promise<string | null> => {
   return decodeJwtUserId(token);
 };
 
+export const getInactiveAccountMessage = (status: string): string => {
+  return status === "SUSPENDED"
+    ? "Your account has been suspended. Please contact the administrator."
+    : "Your account is inactive. Please contact the administrator.";
+};
+
 export const requireUserId = async (): Promise<string> => {
   const userId = await verifyJwtFromCookies();
   if (!userId) {
     throw new UnauthorizedError();
   }
-  return userId;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      status: true,
+    },
+  });
+
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+
+  if (user.status !== "ACTIVE") {
+    throw new UnauthorizedError(getInactiveAccountMessage(user.status), 403);
+  }
+
+  return user.id;
 };
 
 export const setAuthCookie = (response: NextResponse, userId: string) => {
