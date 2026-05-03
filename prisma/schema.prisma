@@ -103,6 +103,7 @@ model Recipe {
   carbs             Float?
   fat               Float?
   fiber             Float?
+  isRecommended     Boolean            @default(false)
   recipeIngredients RecipeIngredient[]
   bookmarks         Bookmark[]
   histories         History[]
