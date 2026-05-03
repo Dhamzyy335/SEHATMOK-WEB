@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import AdminLogoutButton from '@/components/admin/AdminLogoutButton';
 
 type AdminSidebarNavProps = {
   isOpen: boolean;
@@ -72,6 +73,10 @@ export default function AdminSidebarNav({ isOpen, onClose }: AdminSidebarNavProp
             );
           })}
         </nav>
+
+        <div className="border-t border-slate-200 px-3 py-4 dark:border-slate-800">
+          <AdminLogoutButton onLogout={onClose} />
+        </div>
       </div>
     </aside>
   );
