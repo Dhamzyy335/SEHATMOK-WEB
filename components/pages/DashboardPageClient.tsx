@@ -479,14 +479,13 @@ export default function DashboardPageClient() {
   const progressPercent = Math.round(progressRatio * 100);
   const strokeDashOffset = circumference - progressRatio * circumference;
   const userName = summary.user?.name?.trim() ?? "";
-  const avatarAlt = userName || "User avatar";
 
   return (
     <div className="min-h-screen bg-surface font-body text-on-surface pb-32">
       <TopAppBar
         fixed
         avatarUrl={summary.user?.avatarUrl ?? undefined}
-        avatarAlt={avatarAlt}
+        avatarName={userName}
       />
 
       <main className="mx-auto max-w-screen-xl space-y-8 px-6 pt-24">
