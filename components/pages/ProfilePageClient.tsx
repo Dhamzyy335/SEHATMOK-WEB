@@ -301,7 +301,7 @@ export default function ProfilePageClient() {
         </section>
 
         <section className="rounded-2xl bg-surface-container-lowest p-6 editorial-shadow">
-          <Link href="/recipes" className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-primary">menu_book</span>
               <div>
@@ -311,16 +311,17 @@ export default function ProfilePageClient() {
                 </p>
               </div>
             </div>
-            <span className="material-symbols-outlined text-primary">arrow_forward</span>
-          </Link>
+            <Link
+              href="/recipes"
+              className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-on-primary shadow-sm transition-transform active:scale-95"
+            >
+              View
+            </Link>
+          </div>
         </section>
 
         <section className="rounded-2xl bg-surface-container-lowest p-6 editorial-shadow">
-          <Link
-            href="/history"
-            aria-label="Open History"
-            className="flex items-center justify-between gap-4"
-          >
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-primary">history</span>
               <div>
@@ -330,8 +331,14 @@ export default function ProfilePageClient() {
                 </p>
               </div>
             </div>
-            <span className="material-symbols-outlined text-primary">arrow_forward</span>
-          </Link>
+            <Link
+              href="/history"
+              aria-label="Open History"
+              className="rounded-full bg-primary px-4 py-2 text-xs font-bold text-on-primary shadow-sm transition-transform active:scale-95"
+            >
+              View
+            </Link>
+          </div>
         </section>
 
         <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl bg-surface-container-lowest p-6 editorial-shadow">
@@ -456,7 +463,7 @@ export default function ProfilePageClient() {
           <button
             type="submit"
             disabled={isSaving}
-            className="rounded-xl bg-primary px-5 py-3 font-bold text-on-primary transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-4 rounded-xl bg-primary px-5 py-3 font-bold text-on-primary transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? "Saving..." : "Save Profile"}
           </button>
