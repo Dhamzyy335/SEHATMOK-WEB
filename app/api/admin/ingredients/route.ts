@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getInactiveAccountMessage, verifyJwtFromCookies } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { writeSystemLog } from "@/lib/system-logs";
 
 const nullableFloat = z.union([z.number().min(0), z.null()]).optional();
 
@@ -101,6 +102,14 @@ export async function POST(request: Request) {
     const parsedPayload = ingredientCreateSchema.safeParse(payload);
 
     if (!parsedPayload.success) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "CREATE_INGREDIENT",
+        targetType: "INGREDIENT",
+        message: "Failed to create ingredient: invalid payload.",
+        status: "FAILED",
+      });
+
       return NextResponse.json(
         {
           message: "Invalid ingredient create payload.",
@@ -116,6 +125,16 @@ export async function POST(request: Request) {
     });
 
     if (existingIngredient) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "CREATE_INGREDIENT",
+        targetType: "INGREDIENT",
+        targetId: existingIngredient.id,
+        targetLabel: parsedPayload.data.name,
+        message: `Failed to create ingredient ${parsedPayload.data.name}: duplicate name.`,
+        status: "FAILED",
+      });
+
       return NextResponse.json(
         { message: "An ingredient with this name already exists." },
         { status: 409 },
@@ -131,6 +150,16 @@ export async function POST(request: Request) {
         fatPer100: parsedPayload.data.fat,
       },
       select: adminIngredientSelect,
+    });
+
+    await writeSystemLog({
+      actorId: authResult.adminUserId,
+      action: "CREATE_INGREDIENT",
+      targetType: "INGREDIENT",
+      targetId: createdIngredient.id,
+      targetLabel: createdIngredient.name,
+      message: `Created ingredient ${createdIngredient.name}.`,
+      status: "SUCCESS",
     });
 
     return NextResponse.json(mapAdminIngredient(createdIngredient), { status: 201 });

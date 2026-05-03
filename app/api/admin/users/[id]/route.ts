@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getInactiveAccountMessage, verifyJwtFromCookies } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { writeSystemLog } from "@/lib/system-logs";
 
 const userUpdateSchema = z
   .object({
@@ -70,6 +71,15 @@ export async function PATCH(
     const parsedPayload = userUpdateSchema.safeParse(payload);
 
     if (!parsedPayload.success) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "UPDATE_USER",
+        targetType: "USER",
+        targetId: id,
+        message: "Failed to update user: invalid payload.",
+        status: "FAILED",
+      });
+
       return NextResponse.json(
         {
           message: "Invalid user update payload.",
@@ -81,10 +91,19 @@ export async function PATCH(
 
     const existingUser = await prisma.user.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, email: true },
     });
 
     if (!existingUser) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "UPDATE_USER",
+        targetType: "USER",
+        targetId: id,
+        message: "Failed to update user: user not found.",
+        status: "FAILED",
+      });
+
       return NextResponse.json({ message: "User not found." }, { status: 404 });
     }
 
@@ -99,6 +118,20 @@ export async function PATCH(
         email: true,
         role: true,
         status: true,
+      },
+    });
+
+    await writeSystemLog({
+      actorId: authResult.adminUserId,
+      action: "UPDATE_USER",
+      targetType: "USER",
+      targetId: updatedUser.id,
+      targetLabel: updatedUser.email,
+      message: `Updated user ${updatedUser.email}.`,
+      status: "SUCCESS",
+      metadata: {
+        role: updatedUser.role,
+        status: updatedUser.status,
       },
     });
 
@@ -127,6 +160,15 @@ export async function DELETE(
     const { id } = await params;
 
     if (id === authResult.adminUserId) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "DELETE_USER",
+        targetType: "USER",
+        targetId: id,
+        message: "Failed to delete user: admin cannot delete their own account.",
+        status: "FAILED",
+      });
+
       return NextResponse.json(
         { message: "You cannot delete your own admin account." },
         { status: 400 },
@@ -135,10 +177,19 @@ export async function DELETE(
 
     const existingUser = await prisma.user.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, email: true },
     });
 
     if (!existingUser) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "DELETE_USER",
+        targetType: "USER",
+        targetId: id,
+        message: "Failed to delete user: user not found.",
+        status: "FAILED",
+      });
+
       return NextResponse.json({ message: "User not found." }, { status: 404 });
     }
 
@@ -150,6 +201,16 @@ export async function DELETE(
       prisma.mealPlan.deleteMany({ where: { userId: id } }),
       prisma.user.delete({ where: { id } }),
     ]);
+
+    await writeSystemLog({
+      actorId: authResult.adminUserId,
+      action: "DELETE_USER",
+      targetType: "USER",
+      targetId: existingUser.id,
+      targetLabel: existingUser.email,
+      message: `Deleted user ${existingUser.email}.`,
+      status: "SUCCESS",
+    });
 
     return NextResponse.json({ id });
   } catch (error) {

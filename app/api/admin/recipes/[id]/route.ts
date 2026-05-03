@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getInactiveAccountMessage, verifyJwtFromCookies } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { writeSystemLog } from "@/lib/system-logs";
 
 const nullableTrimmedString = (maxLength: number) =>
   z
@@ -156,6 +157,18 @@ const mapAdminRecipe = (recipe: {
   image: recipe.imageUrl,
 });
 
+const getRecipeAction = (data: z.infer<typeof recipeUpdateSchema>) => {
+  const updateKeys = Object.entries(data)
+    .filter(([, value]) => value !== undefined)
+    .map(([key]) => key);
+
+  if (updateKeys.length === 1 && updateKeys[0] === "isRecommended") {
+    return data.isRecommended ? "RECOMMEND_RECIPE" : "UNRECOMMEND_RECIPE";
+  }
+
+  return "UPDATE_RECIPE";
+};
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -171,6 +184,15 @@ export async function PATCH(
     const parsedPayload = recipeUpdateSchema.safeParse(payload);
 
     if (!parsedPayload.success) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "UPDATE_RECIPE",
+        targetType: "RECIPE",
+        targetId: id,
+        message: "Failed to update recipe: invalid payload.",
+        status: "FAILED",
+      });
+
       return NextResponse.json(
         {
           message: "Invalid recipe update payload.",
@@ -182,13 +204,23 @@ export async function PATCH(
 
     const existingRecipe = await prisma.recipe.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, name: true },
     });
 
     if (!existingRecipe) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "UPDATE_RECIPE",
+        targetType: "RECIPE",
+        targetId: id,
+        message: "Failed to update recipe: recipe not found.",
+        status: "FAILED",
+      });
+
       return NextResponse.json({ message: "Recipe not found." }, { status: 404 });
     }
 
+    const action = getRecipeAction(parsedPayload.data);
     const updatedRecipe = await prisma.recipe.update({
       where: { id },
       data: {
@@ -202,6 +234,21 @@ export async function PATCH(
         isRecommended: parsedPayload.data.isRecommended,
       },
       select: adminRecipeSelect,
+    });
+
+    await writeSystemLog({
+      actorId: authResult.adminUserId,
+      action,
+      targetType: "RECIPE",
+      targetId: updatedRecipe.id,
+      targetLabel: updatedRecipe.name,
+      message:
+        action === "RECOMMEND_RECIPE"
+          ? `Recommended recipe ${updatedRecipe.name}.`
+          : action === "UNRECOMMEND_RECIPE"
+            ? `Unrecommended recipe ${updatedRecipe.name}.`
+            : `Updated recipe ${updatedRecipe.name}.`,
+      status: "SUCCESS",
     });
 
     return NextResponse.json(mapAdminRecipe(updatedRecipe));
@@ -230,10 +277,19 @@ export async function DELETE(
 
     const existingRecipe = await prisma.recipe.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, name: true },
     });
 
     if (!existingRecipe) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "DELETE_RECIPE",
+        targetType: "RECIPE",
+        targetId: id,
+        message: "Failed to delete recipe: recipe not found.",
+        status: "FAILED",
+      });
+
       return NextResponse.json({ message: "Recipe not found." }, { status: 404 });
     }
 
@@ -244,6 +300,16 @@ export async function DELETE(
       prisma.mealPlan.deleteMany({ where: { recipeId: id } }),
       prisma.recipe.delete({ where: { id } }),
     ]);
+
+    await writeSystemLog({
+      actorId: authResult.adminUserId,
+      action: "DELETE_RECIPE",
+      targetType: "RECIPE",
+      targetId: existingRecipe.id,
+      targetLabel: existingRecipe.name,
+      message: `Deleted recipe ${existingRecipe.name}.`,
+      status: "SUCCESS",
+    });
 
     return NextResponse.json({ id });
   } catch (error) {

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getInactiveAccountMessage, verifyJwtFromCookies } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { writeSystemLog } from "@/lib/system-logs";
 
 const nullableFloat = z.union([z.number().min(0), z.null()]).optional();
 
@@ -109,6 +110,15 @@ export async function PATCH(
     const parsedPayload = ingredientUpdateSchema.safeParse(payload);
 
     if (!parsedPayload.success) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "UPDATE_INGREDIENT",
+        targetType: "INGREDIENT",
+        targetId: id,
+        message: "Failed to update ingredient: invalid payload.",
+        status: "FAILED",
+      });
+
       return NextResponse.json(
         {
           message: "Invalid ingredient update payload.",
@@ -120,10 +130,19 @@ export async function PATCH(
 
     const existingIngredient = await prisma.ingredient.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, name: true },
     });
 
     if (!existingIngredient) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "UPDATE_INGREDIENT",
+        targetType: "INGREDIENT",
+        targetId: id,
+        message: "Failed to update ingredient: ingredient not found.",
+        status: "FAILED",
+      });
+
       return NextResponse.json({ message: "Ingredient not found." }, { status: 404 });
     }
 
@@ -134,6 +153,16 @@ export async function PATCH(
       });
 
       if (ingredientWithSameName && ingredientWithSameName.id !== id) {
+        await writeSystemLog({
+          actorId: authResult.adminUserId,
+          action: "UPDATE_INGREDIENT",
+          targetType: "INGREDIENT",
+          targetId: id,
+          targetLabel: existingIngredient.name,
+          message: `Failed to update ingredient ${existingIngredient.name}: duplicate name.`,
+          status: "FAILED",
+        });
+
         return NextResponse.json(
           { message: "An ingredient with this name already exists." },
           { status: 409 },
@@ -151,6 +180,16 @@ export async function PATCH(
         fatPer100: parsedPayload.data.fat,
       },
       select: adminIngredientSelect,
+    });
+
+    await writeSystemLog({
+      actorId: authResult.adminUserId,
+      action: "UPDATE_INGREDIENT",
+      targetType: "INGREDIENT",
+      targetId: updatedIngredient.id,
+      targetLabel: updatedIngredient.name,
+      message: `Updated ingredient ${updatedIngredient.name}.`,
+      status: "SUCCESS",
     });
 
     return NextResponse.json(mapAdminIngredient(updatedIngredient));
@@ -201,10 +240,32 @@ export async function DELETE(
     });
 
     if (!existingIngredient) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "DELETE_INGREDIENT",
+        targetType: "INGREDIENT",
+        targetId: id,
+        message: "Failed to delete ingredient: ingredient not found.",
+        status: "FAILED",
+      });
+
       return NextResponse.json({ message: "Ingredient not found." }, { status: 404 });
     }
 
     if (existingIngredient._count.recipeRelations > 0) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "DELETE_INGREDIENT",
+        targetType: "INGREDIENT",
+        targetId: existingIngredient.id,
+        targetLabel: existingIngredient.name,
+        message: `Failed to delete ingredient ${existingIngredient.name}: ingredient is used by recipes.`,
+        status: "FAILED",
+        metadata: {
+          recipeRelations: existingIngredient._count.recipeRelations,
+        },
+      });
+
       return NextResponse.json(
         {
           message:
@@ -216,6 +277,16 @@ export async function DELETE(
 
     await prisma.ingredient.delete({
       where: { id },
+    });
+
+    await writeSystemLog({
+      actorId: authResult.adminUserId,
+      action: "DELETE_INGREDIENT",
+      targetType: "INGREDIENT",
+      targetId: existingIngredient.id,
+      targetLabel: existingIngredient.name,
+      message: `Deleted ingredient ${existingIngredient.name}.`,
+      status: "SUCCESS",
     });
 
     return NextResponse.json({ id });

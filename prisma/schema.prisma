@@ -42,6 +42,11 @@ enum AiRecipeLogStatus {
   FAILED
 }
 
+enum SystemLogStatus {
+  SUCCESS
+  FAILED
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
@@ -63,6 +68,7 @@ model User {
   mealPlans      MealPlan[]
   groceryItems   GroceryItem[]
   aiRecipeLogs   AiRecipeLog[]
+  systemLogs     SystemLog[]
 
   @@index([createdAt])
 }
@@ -210,6 +216,27 @@ model AiRecipeLog {
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SystemLog {
+  id          String          @id @default(cuid())
+  actorId     String?
+  actorEmail  String?         @db.VarChar(191)
+  actorName   String?         @db.VarChar(191)
+  action      String          @db.VarChar(100)
+  targetType  String?         @db.VarChar(100)
+  targetId    String?         @db.VarChar(191)
+  targetLabel String?         @db.VarChar(300)
+  message     String          @db.VarChar(1000)
+  status      SystemLogStatus @default(SUCCESS)
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+  actor       User?           @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([action])
   @@index([status])
   @@index([createdAt])
 }

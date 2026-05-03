@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getInactiveAccountMessage, verifyJwtFromCookies } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { writeSystemLog } from "@/lib/system-logs";
 
 const nullableTrimmedString = (maxLength: number) =>
   z
@@ -161,6 +162,14 @@ export async function POST(request: Request) {
     const parsedPayload = recipeCreateSchema.safeParse(payload);
 
     if (!parsedPayload.success) {
+      await writeSystemLog({
+        actorId: authResult.adminUserId,
+        action: "CREATE_RECIPE",
+        targetType: "RECIPE",
+        message: "Failed to create recipe: invalid payload.",
+        status: "FAILED",
+      });
+
       return NextResponse.json(
         {
           message: "Invalid recipe create payload.",
@@ -182,6 +191,16 @@ export async function POST(request: Request) {
         isRecommended: parsedPayload.data.isRecommended,
       },
       select: adminRecipeSelect,
+    });
+
+    await writeSystemLog({
+      actorId: authResult.adminUserId,
+      action: "CREATE_RECIPE",
+      targetType: "RECIPE",
+      targetId: createdRecipe.id,
+      targetLabel: createdRecipe.name,
+      message: `Created recipe ${createdRecipe.name}.`,
+      status: "SUCCESS",
     });
 
     return NextResponse.json(mapAdminRecipe(createdRecipe), { status: 201 });
