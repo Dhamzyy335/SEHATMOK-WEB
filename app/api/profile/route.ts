@@ -78,7 +78,10 @@ export async function GET() {
     });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
-      return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+      return NextResponse.json(
+        { message: error.message },
+        { status: error.statusCode },
+      );
     }
 
     return NextResponse.json(
@@ -179,7 +182,10 @@ export async function PUT(request: Request) {
     });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
-      return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+      return NextResponse.json(
+        { message: error.message },
+        { status: error.statusCode },
+      );
     }
 
     return NextResponse.json(

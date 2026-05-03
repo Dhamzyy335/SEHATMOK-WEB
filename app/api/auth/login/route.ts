@@ -26,7 +26,13 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email: parsedPayload.data.email.toLowerCase() },
-      select: { id: true, email: true, passwordHash: true },
+      select: {
+        id: true,
+        email: true,
+        passwordHash: true,
+        role: true,
+        status: true,
+      },
     });
 
     if (!user) {
@@ -48,11 +54,21 @@ export async function POST(request: Request) {
       );
     }
 
+    if (user.status !== "ACTIVE") {
+      const message =
+        user.status === "SUSPENDED"
+          ? "Your account has been suspended. Please contact the administrator."
+          : "Your account is inactive. Please contact the administrator.";
+
+      return NextResponse.json({ message }, { status: 403 });
+    }
+
     const response = NextResponse.json({
       message: "Login successful.",
       user: {
         id: user.id,
         email: user.email,
+        role: user.role,
       },
     });
 

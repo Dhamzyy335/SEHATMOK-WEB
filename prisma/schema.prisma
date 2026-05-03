@@ -26,9 +26,25 @@ enum MealSlot {
   DINNER
 }
 
-enum Role {
+enum UserRole {
   USER
   ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum AiRecipeLogStatus {
+  SUCCESS
+  FAILED
+}
+
+enum SystemLogStatus {
+  SUCCESS
+  FAILED
 }
 
 model User {
@@ -37,6 +53,8 @@ model User {
   name           String?
   avatarUrl      String?        @db.VarChar(2048)
   passwordHash   String
+  role           UserRole       @default(USER)
+  status         UserStatus     @default(ACTIVE)
   age            Int?
   weight         Float?
   height         Float?
@@ -44,15 +62,30 @@ model User {
   targetCalories Int?
   createdAt      DateTime       @default(now())
   fridgeItems    FridgeItem[]
-  groceryItems   GroceryItem[]
   logs           UserLog[]
   bookmarks      Bookmark[]
   histories      History[]
   mealPlans      MealPlan[]
-
-  role Role @default(USER)
+  groceryItems   GroceryItem[]
+  aiRecipeLogs   AiRecipeLog[]
+  systemLogs     SystemLog[]
 
   @@index([createdAt])
+}
+
+model GroceryItem {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  quantity  Float?
+  unit      String?
+  isDone    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isDone])
 }
 
 model FridgeItem {
@@ -71,21 +104,6 @@ model FridgeItem {
   @@index([expiryDate])
 }
 
-model GroceryItem {
-  id        String   @id @default(cuid())
-  userId    String
-  name      String
-  quantity  Float?
-  unit      String?
-  isDone    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([isDone])
-}
-
 model Recipe {
   id                String             @id @default(cuid())
   name              String
@@ -97,6 +115,7 @@ model Recipe {
   carbs             Float?
   fat               Float?
   fiber             Float?
+  isRecommended     Boolean            @default(false)
   recipeIngredients RecipeIngredient[]
   bookmarks         Bookmark[]
   histories         History[]
@@ -183,4 +202,41 @@ model MealPlan {
   @@unique([userId, date, slot])
   @@index([userId, date])
   @@index([recipeId])
+}
+
+model AiRecipeLog {
+  id                String            @id @default(cuid())
+  userId            String
+  inputIngredients  Json
+  outputRecipeTitle String?           @db.VarChar(500)
+  status            AiRecipeLogStatus
+  errorMessage      String?           @db.VarChar(1000)
+  latencyMs         Int?
+  createdAt         DateTime          @default(now())
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SystemLog {
+  id          String          @id @default(cuid())
+  actorId     String?
+  actorEmail  String?         @db.VarChar(191)
+  actorName   String?         @db.VarChar(191)
+  action      String          @db.VarChar(100)
+  targetType  String?         @db.VarChar(100)
+  targetId    String?         @db.VarChar(191)
+  targetLabel String?         @db.VarChar(300)
+  message     String          @db.VarChar(1000)
+  status      SystemLogStatus @default(SUCCESS)
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+  actor       User?           @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([action])
+  @@index([status])
+  @@index([createdAt])
 }

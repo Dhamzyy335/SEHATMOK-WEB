@@ -10,12 +10,35 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required."),
 });
 
+type LoginType = "USER" | "ADMIN";
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [selectedLoginType, setSelectedLoginType] = useState<LoginType>("USER");
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const loginOptions: Array<{
+    type: LoginType;
+    label: string;
+    description: string;
+    icon: string;
+  }> = [
+    {
+      type: "USER",
+      label: "User",
+      description: "Open your nutrition dashboard",
+      icon: "person",
+    },
+    {
+      type: "ADMIN",
+      label: "Admin",
+      description: "Open the admin console",
+      icon: "admin_panel_settings",
+    },
+  ];
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -41,7 +64,12 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace("/");
+      if (selectedLoginType === "ADMIN" && result.user?.role !== "ADMIN") {
+        setInlineError("This account does not have admin access.");
+        return;
+      }
+
+      router.replace(selectedLoginType === "ADMIN" ? "/admin" : "/");
       router.refresh();
     } catch (error) {
       setInlineError(error instanceof Error ? error.message : "Unexpected error.");
@@ -67,6 +95,41 @@ export default function LoginPage() {
           onSubmit={handleSubmit}
           className="space-y-4 rounded-2xl bg-surface-container-lowest p-6 editorial-shadow"
         >
+          <div className="grid grid-cols-2 gap-3">
+            {loginOptions.map((option) => {
+              const isSelected = selectedLoginType === option.type;
+
+              return (
+                <button
+                  key={option.type}
+                  type="button"
+                  onClick={() => {
+                    setSelectedLoginType(option.type);
+                    setInlineError(null);
+                  }}
+                  className={`rounded-xl border p-4 text-left transition-colors ${
+                    isSelected
+                      ? "border-primary bg-primary-container text-on-primary-container"
+                      : "border-outline-variant bg-surface-container-low text-on-surface hover:bg-surface-container"
+                  }`}
+                  aria-pressed={isSelected}
+                >
+                  <span
+                    className={`material-symbols-outlined text-2xl ${
+                      isSelected ? "text-primary" : "text-on-surface-variant"
+                    }`}
+                  >
+                    {option.icon}
+                  </span>
+                  <span className="mt-2 block font-bold">{option.label}</span>
+                  <span className="mt-1 block text-xs text-on-surface-variant">
+                    {option.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           <label className="block space-y-1">
             <span className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
               Email
