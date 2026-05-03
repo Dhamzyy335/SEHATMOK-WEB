@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { UnauthorizedError, requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { calculateIngredientAvailability } from "@/lib/recommendations";
 
 type RecipeSummary = {
   id: string;
@@ -10,6 +12,10 @@ type RecipeSummary = {
   protein: number | null;
   carbs: number | null;
   fat: number | null;
+  matchedIngredientCount: number;
+  totalRequiredIngredientCount: number;
+  ingredientAvailabilityPercent: number;
+  missingIngredients: string[];
 };
 
 const categoryKeywordMap: Record<string, string[]> = {
@@ -108,50 +114,58 @@ const matchesCategory = (ingredientNames: string[], keywords: string[]): boolean
 
 export async function GET(request: Request) {
   try {
+    const userId = await requireUserId();
     const url = new URL(request.url);
     const query = url.searchParams.get("q")?.trim();
     const searchQuery = query ? query : null;
     const category = normalizeCategory(url.searchParams.get("category"));
     const categoryKeywords = category ? categoryKeywordMap[category] : undefined;
 
-    const recipes = await prisma.recipe.findMany({
-      where: searchQuery
-        ? {
-            OR: [
-              {
-                name: {
-                  contains: searchQuery,
+    const [recipes, fridgeItems] = await Promise.all([
+      prisma.recipe.findMany({
+        where: searchQuery
+          ? {
+              OR: [
+                {
+                  name: {
+                    contains: searchQuery,
+                  },
                 },
-              },
-              {
-                description: {
-                  contains: searchQuery,
+                {
+                  description: {
+                    contains: searchQuery,
+                  },
                 },
-              },
-            ],
-          }
-        : undefined,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        imageUrl: true,
-        calories: true,
-        protein: true,
-        carbs: true,
-        fat: true,
-        recipeIngredients: {
-          select: {
-            ingredient: {
-              select: {
-                name: true,
+              ],
+            }
+          : undefined,
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          imageUrl: true,
+          calories: true,
+          protein: true,
+          carbs: true,
+          fat: true,
+          recipeIngredients: {
+            select: {
+              ingredient: {
+                select: {
+                  name: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: [{ name: "asc" }],
-    });
+        orderBy: [{ name: "asc" }],
+      }),
+      prisma.fridgeItem.findMany({
+        where: { userId },
+        select: { name: true },
+      }),
+    ]);
+    const availableIngredientNames = fridgeItems.map((item) => item.name);
 
     const filteredRecipes = categoryKeywords
       ? recipes.filter((recipe) =>
@@ -162,19 +176,37 @@ export async function GET(request: Request) {
         )
       : recipes;
 
-    const response: RecipeSummary[] = filteredRecipes.map((recipe) => ({
-      id: recipe.id,
-      name: recipe.name,
-      description: recipe.description,
-      imageUrl: recipe.imageUrl ?? "",
-      calories: recipe.calories,
-      protein: recipe.protein,
-      carbs: recipe.carbs,
-      fat: recipe.fat,
-    }));
+    const response: RecipeSummary[] = filteredRecipes.map((recipe) => {
+      const requiredIngredientNames = recipe.recipeIngredients.map(
+        (relation) => relation.ingredient.name,
+      );
+      const availability = calculateIngredientAvailability(
+        availableIngredientNames,
+        requiredIngredientNames,
+      );
+
+      return {
+        id: recipe.id,
+        name: recipe.name,
+        description: recipe.description,
+        imageUrl: recipe.imageUrl ?? "",
+        calories: recipe.calories,
+        protein: recipe.protein,
+        carbs: recipe.carbs,
+        fat: recipe.fat,
+        matchedIngredientCount: availability.matchedIngredientCount,
+        totalRequiredIngredientCount: availability.totalRequiredIngredientCount,
+        ingredientAvailabilityPercent: availability.ingredientMatchPercent,
+        missingIngredients: availability.missingIngredients,
+      };
+    });
 
     return NextResponse.json(response);
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+    }
+
     return NextResponse.json(
       {
         message: "Failed to fetch recipes.",
