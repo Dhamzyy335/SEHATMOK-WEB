@@ -1,21 +1,37 @@
-'use client';
-import React from 'react';
+import { redirect } from 'next/navigation';
+import AdminSettingsClient, {
+  type AdminSettingsProfile,
+} from './AdminSettingsClient';
+import { requireAdminUserId } from '@/lib/admin-auth';
+import { prisma } from '@/lib/prisma';
 
-export default function AdminSettingsPage(){
-  return (
-    <div className="space-y-6 relative">
-      <div>
-        <h2 className="text-3xl font-bold text-on-surface">Admin Settings</h2>
-        <p className="text-on-surface-variant">Platform configuration, maintenance, and AI engine parameters.</p>
-      </div>
-      <div className="space-y-4 pb-20">
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-outline-variant">Platform Configuration (placeholder)</div>
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-outline-variant">Maintenance Mode (placeholder)</div>
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-outline-variant">AI Engine Parameters (placeholder)</div>
-      </div>
-      <div className="fixed right-6 bottom-6 z-40">
-        <button className="px-4 py-3 bg-primary text-on-primary rounded-xl shadow-lg">Deploy All Changes</button>
-      </div>
-    </div>
-  );
+export default async function AdminSettingsPage() {
+  const adminUserId = await requireAdminUserId();
+
+  const admin = await prisma.user.findUnique({
+    where: { id: adminUserId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      avatarUrl: true,
+      role: true,
+      status: true,
+    },
+  });
+
+  if (!admin) {
+    redirect('/login');
+  }
+
+  const profile: AdminSettingsProfile = {
+    id: admin.id,
+    email: admin.email,
+    name: admin.name,
+    avatarUrl: admin.avatarUrl,
+    role: admin.role,
+    status: admin.status,
+  };
+
+  return <AdminSettingsClient profile={profile} />;
 }
