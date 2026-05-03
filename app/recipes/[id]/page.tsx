@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import RecipeBackButton from "@/components/RecipeBackButton";
 import RecipeBookmarkButton from "@/components/RecipeBookmarkButton";
+import RecipeStartCookingButton from "@/components/RecipeStartCookingButton";
 import AddToMealPlannerButton from "@/components/meal-plans/AddToMealPlannerButton";
 import { requirePageUserId } from "@/lib/page-auth";
 import { prisma } from "@/lib/prisma";
@@ -240,7 +241,10 @@ export default async function RecipeDetailsPage({
               </div>
             </section>
 
-            <section className="mb-12">
+            <section
+              id="recipe-ingredients"
+              className="mb-12 scroll-mt-24 rounded-2xl transition-all duration-300"
+            >
               <h2 className="mb-6 font-headline text-2xl font-bold">Ingredients</h2>
               {ingredientRows.length > 0 ? (
                 <div className="space-y-4">
@@ -271,7 +275,10 @@ export default async function RecipeDetailsPage({
               )}
             </section>
 
-            <section>
+            <section
+              id="recipe-instructions"
+              className="scroll-mt-24 rounded-2xl transition-all duration-300"
+            >
               <h2 className="mb-6 font-headline text-2xl font-bold">Instructions</h2>
               <div className="space-y-8">
                 {stepRows.map((step, index) => (
@@ -322,13 +329,7 @@ export default async function RecipeDetailsPage({
                 variant="compact"
                 className="w-full px-5 py-3 sm:w-auto"
               />
-              <button
-                type="button"
-                className="flex items-center justify-center gap-2 rounded-full bg-primary px-8 py-3 font-headline font-bold text-on-primary shadow-lg shadow-primary/20 transition-transform active:scale-95"
-              >
-                <span className="material-symbols-outlined text-xl">restaurant</span>
-                Start Cooking
-              </button>
+              <RecipeStartCookingButton className="flex items-center justify-center gap-2 rounded-full bg-primary px-8 py-3 font-headline font-bold text-on-primary shadow-lg shadow-primary/20 transition-transform active:scale-95" />
             </div>
           </div>
         </div>
