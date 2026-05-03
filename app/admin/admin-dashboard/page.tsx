@@ -1,8 +1,6 @@
-'use client';
-
-import React, { useState } from 'react';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { MetricCard } from '@/components/admin/MetricCard';
+import { prisma } from '@/lib/prisma';
 
 interface KPIMetric {
   id: number;
@@ -34,14 +32,23 @@ interface Ingredient {
   percentage: number;
 }
 
-export default function AdminDashboardPage() {
-  const [activeChart, setActiveChart] = useState<'7d' | '30d'>('7d');
+const numberFormatter = new Intl.NumberFormat('en-US');
+
+export default async function AdminDashboardPage() {
+  const [totalUsers, totalRecipes, totalFridgeItems, totalBookmarkedRecipes] =
+    await Promise.all([
+      prisma.user.count(),
+      prisma.recipe.count(),
+      prisma.fridgeItem.count(),
+      prisma.bookmark.count(),
+      prisma.mealPlan.count(),
+    ]);
 
   const kpis: KPIMetric[] = [
-    { id: 1, icon: 'group', label: 'Total Users', value: '24,592', trend: { direction: 'up', percentage: 12 } },
-    { id: 2, icon: 'how_to_reg', label: 'Active Users', value: '8,140', trend: { direction: 'up', percentage: 5.2 } },
-    { id: 3, icon: 'restaurant', label: 'Recipes Generated', value: '142,050', trend: { direction: 'down', percentage: 1.4 } },
-    { id: 4, icon: 'kitchen', label: 'Fridge Items', value: '892K', trend: { direction: 'up', percentage: 8 } },
+    { id: 1, icon: 'group', label: 'Total Users', value: numberFormatter.format(totalUsers) },
+    { id: 2, icon: 'restaurant', label: 'Total Recipes', value: numberFormatter.format(totalRecipes) },
+    { id: 3, icon: 'kitchen', label: 'Fridge Items', value: numberFormatter.format(totalFridgeItems) },
+    { id: 4, icon: 'bookmark', label: 'Bookmarked Recipes', value: numberFormatter.format(totalBookmarkedRecipes) },
   ];
 
   const topUsers: TopUser[] = [
