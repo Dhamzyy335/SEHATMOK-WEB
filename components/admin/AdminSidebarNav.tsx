@@ -12,10 +12,10 @@ type AdminSidebarNavProps = {
 const navItems = [
   { label: 'Dashboard', href: '/admin/admin-dashboard', icon: 'dashboard' },
   { label: 'Admin Management', href: '/admin/admin-management', icon: 'admin_panel_settings' },
-  { label: 'Users', href: '/admin/user-management', icon: 'group' },
-  { label: 'Recipes', href: '/admin/recipe-management', icon: 'restaurant' },
+  { label: 'User Management', href: '/admin/user-management', icon: 'group' },
+  { label: 'Recipe Management', href: '/admin/recipe-management', icon: 'restaurant' },
   { label: 'Fridge Monitoring', href: '/admin/fridge-monitoring', icon: 'kitchen' },
-  { label: 'Ingredients', href: '/admin/ingredients-management', icon: 'restaurant_menu' },
+  { label: 'Ingredients Library', href: '/admin/ingredients-management', icon: 'restaurant_menu' },
   { label: 'AI Recipe Logs', href: '/admin/ai-recipe-logs', icon: 'history_edu' },
   { label: 'System Logs', href: '/admin/system-logs', icon: 'description' },
   { label: 'System Monitoring', href: '/admin/system-monitoring', icon: 'monitor_heart' },
