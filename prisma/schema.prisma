@@ -37,6 +37,11 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum AiRecipeLogStatus {
+  SUCCESS
+  FAILED
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
@@ -57,6 +62,7 @@ model User {
   histories      History[]
   mealPlans      MealPlan[]
   groceryItems   GroceryItem[]
+  aiRecipeLogs   AiRecipeLog[]
 
   @@index([createdAt])
 }
@@ -190,4 +196,20 @@ model MealPlan {
   @@unique([userId, date, slot])
   @@index([userId, date])
   @@index([recipeId])
+}
+
+model AiRecipeLog {
+  id                String            @id @default(cuid())
+  userId            String
+  inputIngredients  Json
+  outputRecipeTitle String?           @db.VarChar(500)
+  status            AiRecipeLogStatus
+  errorMessage      String?           @db.VarChar(1000)
+  latencyMs         Int?
+  createdAt         DateTime          @default(now())
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([createdAt])
 }

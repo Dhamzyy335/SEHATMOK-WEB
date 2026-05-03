@@ -5,6 +5,7 @@ import {
   recipeCandidatesSchema,
   type RecipeCandidatesPayload,
 } from "@/lib/ai-recipe-schema";
+import { writeAiRecipeLog } from "@/lib/ai-recipe-logs";
 import { generateRecipeWithGemini } from "@/lib/gemini";
 import { prisma } from "@/lib/prisma";
 
@@ -44,12 +45,24 @@ const parseGeminiCandidates = (text: string): RecipeCandidatesPayload => {
 };
 
 export async function POST(request: Request) {
+  const startedAt = Date.now();
+  let userId: string | null = null;
+  let ingredientNames: string[] = [];
+
   try {
-    const userId = await requireUserId();
+    userId = await requireUserId();
     const payload = await request.json().catch(() => ({}));
     const parsedPayload = requestSchema.safeParse(payload);
 
     if (!parsedPayload.success) {
+      await writeAiRecipeLog({
+        userId,
+        inputIngredients: [],
+        status: "FAILED",
+        errorMessage: "Invalid generate recipes payload.",
+        latencyMs: Date.now() - startedAt,
+      });
+
       return NextResponse.json(
         {
           message: "Invalid generate recipes payload.",
@@ -73,17 +86,33 @@ export async function POST(request: Request) {
     ]);
 
     if (!user) {
+      await writeAiRecipeLog({
+        userId,
+        inputIngredients: [],
+        status: "FAILED",
+        errorMessage: "User not found.",
+        latencyMs: Date.now() - startedAt,
+      });
+
       return NextResponse.json({ message: "User not found." }, { status: 404 });
     }
 
     if (fridgeItems.length === 0) {
+      await writeAiRecipeLog({
+        userId,
+        inputIngredients: [],
+        status: "FAILED",
+        errorMessage: "Selected ingredients not found.",
+        latencyMs: Date.now() - startedAt,
+      });
+
       return NextResponse.json(
         { message: "Selected ingredients not found." },
         { status: 400 },
       );
     }
 
-    const ingredientNames = fridgeItems.map((item) => item.name);
+    ingredientNames = fridgeItems.map((item) => item.name);
     const dietaryPreferences = parsedPayload.data.dietaryPreferences?.trim() || undefined;
 
     let candidatesPayload: RecipeCandidatesPayload;
@@ -98,6 +127,17 @@ export async function POST(request: Request) {
       candidatesPayload = parseGeminiCandidates(geminiText);
     } catch (error) {
       console.error("Gemini recipe generation failed:", error);
+      await writeAiRecipeLog({
+        userId,
+        inputIngredients: ingredientNames,
+        status: "FAILED",
+        errorMessage:
+          error instanceof Error
+            ? error.message
+            : "AI recipe generation failed.",
+        latencyMs: Date.now() - startedAt,
+      });
+
       return NextResponse.json(
         {
           message:
@@ -107,6 +147,16 @@ export async function POST(request: Request) {
       );
     }
 
+    await writeAiRecipeLog({
+      userId,
+      inputIngredients: ingredientNames,
+      outputRecipeTitle: candidatesPayload.candidates
+        .map((candidate) => candidate.name)
+        .join(", "),
+      status: "SUCCESS",
+      latencyMs: Date.now() - startedAt,
+    });
+
     return NextResponse.json({ candidates: candidatesPayload.candidates });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
@@ -114,6 +164,16 @@ export async function POST(request: Request) {
         { message: error.message },
         { status: error.statusCode },
       );
+    }
+
+    if (userId) {
+      await writeAiRecipeLog({
+        userId,
+        inputIngredients: ingredientNames,
+        status: "FAILED",
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
+        latencyMs: Date.now() - startedAt,
+      });
     }
 
     return NextResponse.json(
