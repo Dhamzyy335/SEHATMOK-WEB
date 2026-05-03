@@ -5,8 +5,32 @@ import { UnauthorizedError, requireUserId } from "@/lib/auth";
 import { calculateNutritionTargets } from "@/lib/nutrition";
 import { prisma } from "@/lib/prisma";
 
+const uploadedAvatarPathPattern = /^\/uploads\/avatars\/[A-Za-z0-9._-]+$/;
+
+const isValidAvatarUrl = (value: string): boolean => {
+  if (uploadedAvatarPathPattern.test(value)) {
+    return true;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
+
 const profileUpdateSchema = z
   .object({
+    name: z.string().trim().max(80, "Name must be 80 characters or fewer.").optional(),
+    avatarUrl: z
+      .string()
+      .trim()
+      .max(2048, "Avatar URL must be 2048 characters or fewer.")
+      .optional()
+      .refine((value) => value === undefined || value === "" || isValidAvatarUrl(value), {
+        message: "Avatar URL must be a valid http/https URL or uploaded avatar path.",
+      }),
     age: z.coerce.number().int().min(10).max(120).optional(),
     weight: z.coerce.number().min(20).max(400).optional(),
     height: z.coerce.number().min(100).max(250).optional(),
@@ -26,6 +50,8 @@ export async function GET() {
       select: {
         id: true,
         email: true,
+        name: true,
+        avatarUrl: true,
         age: true,
         weight: true,
         height: true,
@@ -107,13 +133,26 @@ export async function PUT(request: Request) {
     };
 
     const { bmr, tdee } = calculateNutritionTargets(mergedProfile);
+    const hasMetricInput =
+      parsedPayload.data.age !== undefined ||
+      parsedPayload.data.weight !== undefined ||
+      parsedPayload.data.height !== undefined ||
+      parsedPayload.data.activityLevel !== undefined;
     const computedTargetCalories =
       parsedPayload.data.targetCalories ??
-      (tdee === null ? currentUser.targetCalories : Math.round(tdee));
+      (hasMetricInput && tdee !== null ? Math.round(tdee) : undefined);
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
+        name:
+          parsedPayload.data.name === undefined
+            ? undefined
+            : parsedPayload.data.name || null,
+        avatarUrl:
+          parsedPayload.data.avatarUrl === undefined
+            ? undefined
+            : parsedPayload.data.avatarUrl || null,
         age: parsedPayload.data.age,
         weight: parsedPayload.data.weight,
         height: parsedPayload.data.height,
@@ -123,6 +162,8 @@ export async function PUT(request: Request) {
       select: {
         id: true,
         email: true,
+        name: true,
+        avatarUrl: true,
         age: true,
         weight: true,
         height: true,
@@ -149,4 +190,8 @@ export async function PUT(request: Request) {
       { status: 500 },
     );
   }
+}
+
+export async function PATCH(request: Request) {
+  return PUT(request);
 }
