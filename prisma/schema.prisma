@@ -31,11 +31,20 @@ enum UserRole {
   ADMIN
 }
 
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
 model User {
   id             String         @id @default(cuid())
   email          String         @unique
+  name           String?
+  avatarUrl      String?        @db.VarChar(2048)
   passwordHash   String
   role           UserRole       @default(USER)
+  status         UserStatus     @default(ACTIVE)
   age            Int?
   weight         Float?
   height         Float?
@@ -47,8 +56,24 @@ model User {
   bookmarks      Bookmark[]
   histories      History[]
   mealPlans      MealPlan[]
+  groceryItems   GroceryItem[]
 
   @@index([createdAt])
+}
+
+model GroceryItem {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  quantity  Float?
+  unit      String?
+  isDone    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isDone])
 }
 
 model FridgeItem {
